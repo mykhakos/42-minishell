@@ -23,25 +23,25 @@
 
 # include "lexer_parser.h"
 # include "cmd.h"
-# include "env.h"
+# include "env_var.h"
 # include "builtins.h"
 # include "executor.h"
 
 
 typedef struct s_minishell
 {
-    char		**path;      // Array of strings representing the executable search paths
-    char		*line;      // Current input line
-    int			nbrofcom;   // Number of commands in the input line
-    int			nbr_pipes;  // Number of pipes in the input line
-    int			*fd_pipes;  // Array of file descriptors for pipes
-    char		*prompt;    // Shell prompt
-    char		*home;      // Home directory path
-    char		*old_cwd;   // Previous working directory path
-    int			exitstatus; // Exit status of the last command
-    t_env_var	*enviro;    // Linked list representing environment variables
-    t_token	    *lex;       // Linked list representing lexical analysis of the input line
-    t_cmd   	*cmds;      // Linked list representing parsed commands
+    char		**exec_paths;
+    char		*input_line;
+    int			cmd_count;
+    int			pipe_cound;
+    int			*pipe_fd_arr;
+    char		*prompt;
+    char		*home_dir;
+    char		*prev_cwd;
+    int			exit_status;
+    t_env_var	*env_var_lst;
+    t_token	    *token_lst;
+    t_cmd   	*cmd_lst;
 }	t_minishell;
 
 

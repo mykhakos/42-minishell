@@ -1,59 +1,7 @@
-#include "../include/env.h"
+#include "../include/env_var.h"
 
 
-char *extract_key(char *env)
-{
-    int i;
-    char *key;
-
-    if (!env)
-        return (NULL);
-    i = 0;
-    while (env[i] != '=')
-        i++;
-    key = ft_calloc(sizeof(char), (i + 1));
-    if (key == NULL)
-        return (NULL);
-    i = 0;
-    while (env[i] != '=')
-    {
-        key[i] = env[i];
-        i++;
-    }
-    key[i] = '\0';
-    return (key);
-}
-
-char *extract_value(char *env)
-{
-    int i;
-    int j;
-    char *value;
-
-    if (!env)
-        return (NULL);
-    i = 0;
-    while (env[i] != '=')
-        i++;
-    i++;
-    j = i;
-    while (env[j])
-        j++;
-    value = ft_calloc(sizeof(char), ((j - i) + 1));
-    if (!value)
-        return (NULL);
-    j = 0;
-    while (env[i])
-    {
-        value[j] = env[i];
-        i++;
-        j++;
-    }
-    value[j] = '\0';
-    return (value);
-}
-
-t_env_var *env_var_new(char *key, char *value)
+t_env_var *new_env_var(char *key, char *value)
 {
     t_env_var *new;
 
@@ -97,7 +45,7 @@ t_env_var *env_var_from_envp(char **envp)
     {
         key = extract_key(envp[i]);
         value = extract_value(envp[i]);
-        new = env_var_new(key, value);
+        new = new_env_var(key, value);
         if (!new)
             return (env_var_free(&lst));
         env_var_add_back(&lst, new);
@@ -115,7 +63,7 @@ t_env_var *env_var_find(t_env_var *lst, char *key)
     curr = lst;
     while (curr)
     {
-        if (ft_strcmp(curr->key, key) == 0)
+        if (ft_strncmp(curr->key, key, ft_strlen(key) + 1) == 0)
             return (curr);
         curr = curr->next;
     }

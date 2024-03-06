@@ -1,19 +1,19 @@
 #include "include/minishell.h"
 
 
-void parse_env_var(t_token **elem, char **args, int *i, t_minishell *minishell)
+void parse_env_var(t_token **elem, char **args, int *i, t_minishell *msh)
 {
     char *tmp;
 
     if (ft_strncmp((*elem)->contents, "$?", ft_strlen("$?")) == 0)
     {
         // Special case: $?
-        args[*i] = ft_itoa(minishell->exitstatus);
+        args[*i] = ft_itoa(msh->exit_status);
     }
     else
     {
         // Regular environment variable
-        tmp = get_env(minishell->enviro, (*elem)->contents + 1);
+        tmp = get_env(msh->env_var_lst, (*elem)->contents + 1);
         if (tmp == NULL)
         {
             // If the environment variable is not found, treat it as a regular word
@@ -59,7 +59,7 @@ void parse_word(t_token **elem, char **args, int *i)
  * 
  * //type === QOUTE or DQUOTE
 */
-char	*parse_in_quotes(char *line, t_token **token, enum e_token_type type, t_minishell *minishell)
+char	*parse_in_quotes(char *line, t_token **token, enum e_token_type type, t_minishell *msh)
 {
 	char	*val;
 	char	*tmp;
@@ -81,9 +81,9 @@ char	*parse_in_quotes(char *line, t_token **token, enum e_token_type type, t_min
         if ((*token)->type == ENV && (*token)->state == IN_DQUOTE)
         {
             if (ft_strncmp((*token)->contents, "$?", ft_strlen("$?")) == 0)
-                *val = ft_itoa(minishell->exitstatus);
+                *val = ft_itoa(msh->exitstatus);
             else
-                *val = get_env(minishell->enviro, (*token)->contents + 1);
+                *val = get_env(msh->enviro, (*token)->contents + 1);
             if (*val)
             {
                 tmp = ft_strjoin(*line, *val);

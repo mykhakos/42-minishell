@@ -1,23 +1,23 @@
-#include "../include/lexer_parser.h"
+#include "../include/tokenizer.h"
 
 
-t_token	*new_token(char *type, char *contents, int len, enum e_token_state state)
+t_token	*new_token(e_token_type type, char *contents, int len, e_token_quotes quotes)
 {
 	t_token	*new;
 
 	new = (t_token *)malloc(sizeof(t_token));
 	if (!new)
 		return (NULL);
+	new->type = type;
 	new->contents = contents;
 	new->len = len;
-	new->type = type;
-	new->state = state;
+	new->quotes = quotes;
 	new->prev = NULL;
 	new->next = NULL;
 	return (new);
 }
 
-t_token	*token_find(t_token *token_lst, char *type)
+t_token	*token_find(t_token *token_lst, e_token_type type)
 {
     t_token	*curr;
 
@@ -26,7 +26,7 @@ t_token	*token_find(t_token *token_lst, char *type)
     curr = token_lst;
     while (curr)
     {
-        if (ft_strcmp(curr->type, type) == 0)
+        if (curr->type == type)
             return (curr);
         curr = curr->next;
     }
