@@ -5,8 +5,8 @@ int	create_pipes(t_minishell	*minishell)
 	int	i;
 
 	i = 0;
-	if (minishell->nbrofcom > 1)
-		minishell->fd_pipes = (int *)malloc(sizeof(int) * minishell->nbr_pipes * 2);
+	if (minishell->cmd_count > 1)
+		minishell->pipe_fd_arr = (int *)malloc(sizeof(int) * minishell->nbr_pipes * 2);
 	while (i < minishell->nbr_pipes * 2)
 	{
 		if (pipe(minishell->fd_pipes + i) == -1) // from unistd.h

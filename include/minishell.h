@@ -33,7 +33,7 @@ typedef struct s_minishell
     char		**exec_paths;
     char		*input_line;
     int			cmd_count;
-    int			pipe_cound;
+    int			pipe_count;
     int			*pipe_fd_arr;
     char		*prompt;
     char		*home_dir;
