@@ -19,19 +19,19 @@ int	create_pipes(t_minishell	*minishell)
 
 void close_pipes(t_minishell *minishell)
 {
-    int i;
+	int i;
 
-    i = 0;
+	i = 0;
 
     // Iterate through the array of pipe-related file descriptors
-    while (i < minishell->pipe_count * 2)
-    {
-        // Close the read and write ends of the pipe
-        ft_close_two_fd(&minishell->pipe_fd_arr[i], &minishell->pipe_fd_arr[i + 1]);
+	while (i < minishell->pipe_count * 2)
+	{
+		// Close the read and write ends of the pipe
+		ft_close_two_fd(&minishell->pipe_fd_arr[i], &minishell->pipe_fd_arr[i + 1]);
 
-        // Move to the next pair of file descriptors
-        i += 2;
-    }
+		// Move to the next pair of file descriptors
+		i += 2;
+	}
 }
 
 

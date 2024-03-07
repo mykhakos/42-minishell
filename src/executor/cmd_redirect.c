@@ -76,11 +76,11 @@ void redirect_inputs_outputs(t_minishell *minishell)
 {
     t_cmd *cmd;
 
-    cmd = minishell->cmds;
+    cmd = minishell->cmd_lst;
     while (cmd)
     {
-        redirect_input(cmd, &minishell->exitstatus);
-        redirect_output(cmd, &minishell->exitstatus);
+        redirect_input(cmd, &minishell->exit_status);
+        redirect_output(cmd, &minishell->exit_status);
         cmd = cmd->next;
     }
 }

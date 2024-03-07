@@ -83,10 +83,10 @@ static int	get_path(t_minishell *minishell, t_cmd *cmd)
 		return (FALSE);
 
 	// Iterate through the directories in minishell->path
-	while (minishell->path && minishell->path[i])
+	while (minishell->exec_paths && minishell->exec_paths[i])
 	{
 		// Construct the full path for the executable
-		tmp = ft_strjoin(minishell->path[i++], "/");
+		tmp = ft_strjoin(minishell->exec_paths[i++], "/");
 		cmd->exec_path = ft_strjoin(tmp, cmd->cmd_args[0]);
 		free(tmp);
 
