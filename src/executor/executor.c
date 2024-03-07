@@ -6,10 +6,10 @@ int	create_pipes(t_minishell	*minishell)
 
 	i = 0;
 	if (minishell->cmd_count > 1)
-		minishell->pipe_fd_arr = (int *)malloc(sizeof(int) * minishell->nbr_pipes * 2);
-	while (i < minishell->nbr_pipes * 2)
+		minishell->pipe_fd_arr = (int *)malloc(sizeof(int) * minishell->pipe_count * 2);
+	while (i < minishell->pipe_count * 2)
 	{
-		if (pipe(minishell->fd_pipes + i) == -1) // from unistd.h
+		if (pipe(minishell->pipe_fd_arr + i) == -1) // from unistd.h
 			return (ft_strerror("Pipes creating", "error"), -1);
 		i += 2;
 	}
@@ -24,10 +24,10 @@ void close_pipes(t_minishell *minishell)
     i = 0;
 
     // Iterate through the array of pipe-related file descriptors
-    while (i < minishell->nbr_pipes * 2)
+    while (i < minishell->pipe_count * 2)
     {
         // Close the read and write ends of the pipe
-        ft_close_two_fd(&minishell->fd_pipes[i], &minishell->fd_pipes[i + 1]);
+        ft_close_two_fd(&minishell->pipe_fd_arr[i], &minishell->pipe_fd_arr[i + 1]);
 
         // Move to the next pair of file descriptors
         i += 2;
@@ -56,7 +56,7 @@ static int	ft_executor_ext_one(t_minishell *minishell)
 {
 	if (create_pipes(minishell) == -1)
 	{
-		minishell->exitstatus = 1;
+		minishell->exit_status = 1;
 		return (-1);
 	}
 	redirect_inputs_outputs(minishell);
@@ -67,9 +67,9 @@ static int	ft_executor_ext_one(t_minishell *minishell)
 static void	ft_executor_ext_two(t_minishell *minishell, t_cmd *cmd, char **envp)
 {
 	if (ft_is_builtin(cmd->cmd_args[0]) && !is_builtin_with_output(cmd->cmd_args[0]))
-		minishell->exitstatus = ft_execute_builtin(minishell, cmd);
+		minishell->exit_status = ft_execute_builtin(minishell, cmd);
 	else
-		minishell->exitstatus = execute_cmd(cmd, minishell, envp);
+		minishell->exit_status = execute_cmd(cmd, minishell, envp);
 	signal(SIGINT, clear_input_on_interrupt);
 }
 
@@ -83,7 +83,7 @@ void executor(t_minishell *minishell, char **envp)
         return;
 
     // Iterate through the linked list of command nodes
-    cmd = minishell->cmds;
+    cmd = minishell->cmd_lst;
     while (cmd)
     {
         // Check for conditions where the command execution should be skipped
@@ -94,7 +94,7 @@ void executor(t_minishell *minishell, char **envp)
                 && ft_strncmp(cmd->in_redir, "<<", ft_strlen("<<") + 1) == 0)
             {
                 ft_strerror("HEREDOC error", "empty command");
-                minishell->exitstatus = 1;
+                minishell->exit_status = 1;
             }
 
             // Close file descriptors and move to the next command node
