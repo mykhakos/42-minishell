@@ -33,7 +33,7 @@ enum e_token
     REDIR_IN = '<',    // Represents a input redirection token
     REDIR_OUT = '>',   // Represents an output redirection token
     HERE_DOC,         // Represents a here document token, often used for input redirection.
-    DREDIR_OUT,       // epresents a double output redirection token (>>), used to append output to a file.
+    DREDIR_OUT,       // Represents a double output redirection token (>>), used to append output to a file.
 };
 
 typedef struct s_elem		t_elem;
@@ -85,14 +85,14 @@ typedef struct s_node_cmd
 
 typedef struct s_cmd
 {
-    char *path;                 // Represents the path to the command executable
-    char **cmd;                 // Represents the array of command arguments
-    char *redir_in;             // Represents the type of input redirection (e.g., "<")
-    char *in_name;              // Represents the input file name for redirection
-    int in_fd;                  // Represents the file descriptor for input redirection
-    char *redir_out;            // Represents the type of output redirection (e.g., ">")
-    char *out_name;             // Represents the output file name for redirection
-    int out_fd;                 // Represents the file descriptor for output redirection
+    char *exec_path;       // Represents the path to the command executable
+    char **cmd_args;       // Represents the array of command arguments
+    char *in_redir;        // Represents the type of input redirection (e.g., "<")
+    char *in_filename;     // Represents the input file name for redirection
+    int in_fd;             // Represents the file descriptor for input redirection
+    char *out_redir;       // Represents the type of output redirection (e.g., ">")
+    char *out_filename;    // Represents the output file name for redirection
+    int out_fd;            // Represents the file descriptor for output redirection
     struct s_cmd *next;    // Pointer to the next node in the linked list
 } t_cmd;
 
@@ -214,21 +214,21 @@ static void	remove_cmd_list_ext(t_cmd *current)
 	int	i;
 
 	i = 0;
-	if (current->path)
-		free(current->path);
-	if (current->redir_in)
-		free(current->redir_in);
-	if (current->in_name)
-		free(current->in_name);
-	if (current->redir_out)
-		free(current->redir_out);
-	if (current->out_name)
-		free(current->out_name);
-	if (current->cmd)
+	if (current->exec_path)
+		free(current->exec_path);
+	if (current->in_redir)
+		free(current->in_redir);
+	if (current->in_filename)
+		free(current->in_filename);
+	if (current->out_redir)
+		free(current->out_redir);
+	if (current->out_filename)
+		free(current->out_filename);
+	if (current->cmd_args)
 	{
-		while (current->cmd[i])
-			free(current->cmd[i++]);
-		free(current->cmd);
+		while (current->cmd_args[i])
+			free(current->cmd_args[i++]);
+		free(current->cmd_args);
 	}
 	if (current->in_fd > 0)
 		close(current->in_fd);
@@ -484,27 +484,27 @@ int	ft_echo(t_cmd *cmd)
 	no_n = FALSE;
 
 	// Check if there are no arguments, print a newline, and return
-	if (cmd->cmd[1] == NULL)
+	if (cmd->cmd_args[1] == NULL)
 		return (printf("\n"), 0);
 
 	// Check if the first argument is "-n"
-	if (ft_strncmp(cmd->cmd[1], "-n", ft_strlen("-n") + 1) == 0)
+	if (ft_strncmp(cmd->cmd_args[1], "-n", ft_strlen("-n") + 1) == 0)
 	{
 		no_n = TRUE;
 		i++;
 	}
 
 	// Iterate through the arguments and print them
-	while (cmd->cmd[++i])
+	while (cmd->cmd_args[++i])
 	{
 		// Skip empty arguments
-		if (cmd->cmd[i] && ft_strlen(cmd->cmd[i]) == 0)
+		if (cmd->cmd_args[i] && ft_strlen(cmd->cmd_args[i]) == 0)
 			continue;
 
-		printf("%s", cmd->cmd[i]);
+		printf("%s", cmd->cmd_args[i]);
 
 		// Print a space if there is another argument
-		if (cmd->cmd[i + 1])
+		if (cmd->cmd_args[i + 1])
 			printf(" ");
 	}
 
@@ -612,14 +612,14 @@ char *cd_dot_ext(char *pcwd, t_cmd *cmd)
 	tmp = pcwd;
 
 	// Check if the command argument is ".", "./", or "../"
-	if (!ft_strncmp(cmd->cmd[1], ".", 2) || !ft_strncmp(cmd->cmd[1], "./", 3))
+	if (!ft_strncmp(cmd->cmd_args[1], ".", 2) || !ft_strncmp(cmd->cmd_args[1], "./", 3))
 		return (ft_strdup(pcwd));
-	else if (ft_strncmp(cmd->cmd[1], "..", 3) == 0 || ft_strncmp(cmd->cmd[1], "../", 4) == 0)
+	else if (ft_strncmp(cmd->cmd_args[1], "..", 3) == 0 || ft_strncmp(cmd->cmd_args[1], "../", 4) == 0)
 		return (ft_substr(pcwd, 0, ft_strrchr(pcwd, '/') - pcwd));
 
 	// Handle cases where the command argument starts with "../"
 	path[0] = ft_strdup(pcwd);
-	while (ft_strncmp(cmd->cmd[1], "../", 3) == 0)
+	while (ft_strncmp(cmd->cmd_args[1], "../", 3) == 0)
 	{
 		// Update path to parent directory
 		path[1] = ft_substr(path[0], 0, ft_strrchr(path[0], '/') - path[0]);
@@ -627,15 +627,15 @@ char *cd_dot_ext(char *pcwd, t_cmd *cmd)
 		path[0] = path[1];
 
 		// Update command argument to remove "../"
-		tmp = ft_substr(cmd->cmd[1], 3, ft_strlen(cmd->cmd[1]) - 3);
-		free(cmd->cmd[1]);
-		cmd->cmd[1] = tmp;
+		tmp = ft_substr(cmd->cmd_args[1], 3, ft_strlen(cmd->cmd_args[1]) - 3);
+		free(cmd->cmd_args[1]);
+		cmd->cmd_args[1] = tmp;
 	}
 
 	// Combine path components
 	path[1] = ft_strjoin(path[0], "/");
 	free(path[0]);
-	tmp = ft_strjoin(path[1], cmd->cmd[1]);
+	tmp = ft_strjoin(path[1], cmd->cmd_args[1]);
 
 	// Clean up and return the updated path
 	return (free(path[1]), tmp);
@@ -657,14 +657,14 @@ char	*get_arg_cd_ext(char *home, char *pcwd, t_cmd *cmd, char c)
 		res = cd_dot_ext(pcwd, cmd);
 	else
 	{
-		if (ft_strlen(cmd->cmd[1]) == 1)
+		if (ft_strlen(cmd->cmd_args[1]) == 1)
 			return (ft_strdup(home));
-		if (cmd->cmd[1][1] == '/')
-			res = ft_strjoin(home, cmd->cmd[1] + 1);
+		if (cmd->cmd_args[1][1] == '/')
+			res = ft_strjoin(home, cmd->cmd_args[1] + 1);
 		else
 		{
 			tmp = ft_strjoin(home, "/");
-			res = ft_strjoin(tmp, cmd->cmd[1]);
+			res = ft_strjoin(tmp, cmd->cmd_args[1]);
 			free(tmp);
 		}
 	}
@@ -683,18 +683,18 @@ char	*get_arg_cd(t_cmd *cmd, char *home, char *old_cwd, char *pcwd)
 	char	*res;
 
 	res = NULL;
-	if (cmd->cmd[1] == NULL)
+	if (cmd->cmd_args[1] == NULL)
 	{
 		if (home == NULL)
 			return (res);
 		res = ft_strdup(home);
 	}
-	else if (cmd->cmd[1] && ft_strncmp(cmd->cmd[1], "-", 2) == 0)
+	else if (cmd->cmd_args[1] && ft_strncmp(cmd->cmd_args[1], "-", 2) == 0)
 		return (ft_strdup(old_cwd));
-	else if (cmd->cmd[1] && (cmd->cmd[1][0] == '~' || cmd->cmd[1][0] == '.'))
-		res = get_arg_cd_ext(home, pcwd, cmd, cmd->cmd[1][0]);
+	else if (cmd->cmd_args[1] && (cmd->cmd_args[1][0] == '~' || cmd->cmd_args[1][0] == '.'))
+		res = get_arg_cd_ext(home, pcwd, cmd, cmd->cmd_args[1][0]);
 	else
-		res = ft_strdup(cmd->cmd[1]);
+		res = ft_strdup(cmd->cmd_args[1]);
 	return (res);
 }
 
@@ -709,9 +709,9 @@ int	ft_cd(t_minishell *mini, t_cmd *cmd)
 	char	pcwd[1024];
 	char	*dest;
 
-	if (cmd->cmd[1] && cmd->cmd[2] != NULL)
+	if (cmd->cmd_args[1] && cmd->cmd_args[2] != NULL)
 	{
-		ft_strerror("too many arguments", cmd->cmd[0]);
+		ft_strerror("too many arguments", cmd->cmd_args[0]);
 		return (1);
 	}
 	getcwd(pcwd, 1024);
@@ -742,13 +742,13 @@ int	check_env_var_and_repl(t_env_var **head, t_cmd *cmd)
 	char	*tmp;
 
 	cur = *head;
-	tmp = ft_separate_key(cmd->cmd[1]);
+	tmp = ft_separate_key(cmd->cmd_args[1]);
 	while (cur)
 	{
 		if (ft_strncmp(cur->key, tmp, ft_strlen(tmp) + 1) == 0)
 		{
 			free(cur->value);
-			cur->value = ft_separate_value(cmd->cmd[1]);
+			cur->value = ft_separate_value(cmd->cmd_args[1]);
 			free(tmp);
 			return (TRUE);
 		}
@@ -870,12 +870,12 @@ int	ft_export(t_minishell *mini, t_cmd *cmd)
 {
 	t_env_var	*cur;
 
-	if (cmd->cmd[1])
+	if (cmd->cmd_args[1])
 	{
-		if (!ex_command_tester(cmd->cmd[1]))
+		if (!ex_command_tester(cmd->cmd_args[1]))
 			return (2);
 		if (check_env_var_and_repl(&mini->env_var_lst, cmd) == FALSE)
-			ft_add_end(&mini->env_var_lst, cmd->cmd[1]);
+			ft_add_end(&mini->env_var_lst, cmd->cmd_args[1]);
 		path_clean(mini);
 		ft_update_path(mini);
 		return (0);
@@ -902,14 +902,14 @@ int	ft_unset(t_minishell *mini, t_cmd *cmd)
 	int		i;
 
 	i = 0;
-	if (!cmd->cmd[1])
+	if (!cmd->cmd_args[1])
 		return (0);
 	current = mini->env_var_lst;
 	while (current != NULL)
 	{
-		if (ft_strncmp(current->key, cmd->cmd[1], ft_strlen(cmd->cmd[1])) == 0)
+		if (ft_strncmp(current->key, cmd->cmd_args[1], ft_strlen(cmd->cmd_args[1])) == 0)
 		{
-			ft_remove_node(&mini->env_var_lst, cmd->cmd[1]);
+			ft_remove_node(&mini->env_var_lst, cmd->cmd_args[1]);
 			if (mini->exec_paths != NULL)
 			{
 				while (mini->exec_paths[i])
@@ -936,20 +936,20 @@ int	ft_exit(t_minishell *mini, t_cmd *cmd)
 
 	res = 0;
 	ft_putstr_fd("exit\n", STDOUT_FILENO);
-	if (cmd->cmd[1] && ft_isnum(cmd->cmd[1]) == FALSE)
+	if (cmd->cmd_args[1] && ft_isnum(cmd->cmd_args[1]) == FALSE)
 	{
 		ft_putstr_fd("exit: ", STDERR_FILENO);
-		ft_putstr_fd(cmd->cmd[1], STDERR_FILENO);
+		ft_putstr_fd(cmd->cmd_args[1], STDERR_FILENO);
 		ft_putstr_fd(": numeric argument required\n", STDERR_FILENO);
 		res = 2;
 	}
-	else if (cmd->cmd[1] && ft_isnum(cmd->cmd[1]) && cmd->cmd[2])
+	else if (cmd->cmd_args[1] && ft_isnum(cmd->cmd_args[1]) && cmd->cmd_args[2])
 	{
 		ft_putstr_fd("exit: too many arguments\n", STDERR_FILENO);
 		return (1);
 	}
-	else if (cmd->cmd[1] && ft_isnum(cmd->cmd[1]))
-		res = ft_atoi(cmd->cmd[1]);
+	else if (cmd->cmd_args[1] && ft_isnum(cmd->cmd_args[1]))
+		res = ft_atoi(cmd->cmd_args[1]);
 	ft_cleaning(mini);
 	exit(res);
 }
@@ -1029,34 +1029,34 @@ int	create_pipes(t_minishell	*mini)
 
 /*
  * part open redirs
- * If the redir_in field of the command is not NULL and its value is "<<", it duplicates the standard input file descriptor 
+ * If the in_redir field of the command is not NULL and its value is "<<", it duplicates the standard input file descriptor 
  *(STDIN_FILENO) using the dup system call. 
  * This is often used for here documents or here strings, where the input is provided directly in the command.
- * If the redir_in field is not NULL and does not match "<<", it assumes that the input is redirected from a file. 
- * In this case, it opens the specified file (node->in_name) in read-only mode using the open system call.
+ * If the in_redir field is not NULL and does not match "<<", it assumes that the input is redirected from a file. 
+ * In this case, it opens the specified file (node->in_filename) in read-only mode using the open system call.
 */
 static void open_infile(t_cmd *node, int *exit_st)
 {
     *exit_st = 0;
-    if (node->redir_in && ft_strncmp(node->redir_in, "<<", ft_strlen("<<")) == 0)
+    if (node->in_redir && ft_strncmp(node->in_redir, "<<", ft_strlen("<<")) == 0)
     {
         // If input redirection is "<<", duplicate STDIN_FILENO
         node->in_fd = dup(STDIN_FILENO);  // from unistd.h
         if (node->in_fd == -1)
         {
             // Handle error if duplication fails
-            ft_strerror(strerror(errno), node->in_name);
+            ft_strerror(strerror(errno), node->in_filename);
             *exit_st = 1; // Set exit status flag to 1
         }
     }
-    else if (node->redir_in)
+    else if (node->in_redir)
     {
         // If input redirection is a file name, open the file in read-only mode
-        node->in_fd = open(node->in_name, O_RDONLY, 0666);
+        node->in_fd = open(node->in_filename, O_RDONLY, 0666);
         if (node->in_fd == -1)
         {
             // Handle error if file opening fails
-            ft_strerror(strerror(errno), node->in_name);
+            ft_strerror(strerror(errno), node->in_filename);
             *exit_st = 1; // Set exit status flag to 1
         }
     }
@@ -1065,27 +1065,27 @@ static void open_infile(t_cmd *node, int *exit_st)
 /*
  * part open redirs
  * function is responsible for handling the output file redirection for a given command (t_cmd).
- * It checks the type of output redirection specified in the command (node->redir_out) and performs the necessary actions 
+ * It checks the type of output redirection specified in the command (node->out_redir) and performs the necessary actions 
  * to set up the output file descriptor (node->out_fd).
- * If the redir_out field of the command is not NULL, it checks whether the value is ">>" (append mode) using ft_strncmp. If true, it opens the specified file (node->out_name) in append mode (O_APPEND). Otherwise, it opens the file in write mode with truncation (O_TRUNC).
+ * If the out_redir field of the command is not NULL, it checks whether the value is ">>" (append mode) using ft_strncmp. If true, it opens the specified file (node->out_filename) in append mode (O_APPEND). Otherwise, it opens the file in write mode with truncation (O_TRUNC).
  * If the output file descriptor (node->out_fd) is -1 after attempting to open the file, it indicates that an error occurred. In this case, it sets the exit_st flag to 1.
  * If the file opening is successful, it sets the exit_st flag to 0.
  *
 */
 static void open_outfile(t_cmd *node, int *exit_st)
 {
-    if (node->redir_out)
+    if (node->out_redir)
     {
-        if (node->redir_out && ft_strncmp(node->redir_out, ">>", ft_strlen(">>") + 1) == 0)
-            node->out_fd = open(node->out_name, O_CREAT | O_RDWR | O_APPEND, 0666);
+        if (node->out_redir && ft_strncmp(node->out_redir, ">>", ft_strlen(">>") + 1) == 0)
+            node->out_fd = open(node->out_filename, O_CREAT | O_RDWR | O_APPEND, 0666);
         else
-            node->out_fd = open(node->out_name, O_CREAT | O_RDWR | O_TRUNC, 0666);
+            node->out_fd = open(node->out_filename, O_CREAT | O_RDWR | O_TRUNC, 0666);
     }
 
     if (node->out_fd == -1)
     {
         // Handle error if file opening fails
-        ft_strerror(strerror(errno), node->in_name);
+        ft_strerror(strerror(errno), node->in_filename);
         *exit_st = 1; // Set exit status flag to 1
     }
     else
@@ -1189,31 +1189,6 @@ static void assign_fds(t_minishell *mini)
 }
 
 
-/*
- *
- * The waitpid system call is used to wait for a specific child process (pid) to terminate. 
- * The exit status of the process is stored in the status variable.
- * The macro WIFEXITED(status) checks whether the child process terminated normally (exited). 
- * If true (non-zero), the function returns the exit status using WEXITSTATUS(status).
- * If the child process did not terminate normally (e.g., it was terminated by a signal), 
- * the function returns a default exit status of 130. This value (130) is commonly used to indicate that the process was terminated 
- * by a user interrupt (e.g., pressing Ctrl+C), and it's a convention used in some shells.
- * 
-*/
-int	ft_waitpid(pid_t pid)
-{
-	int	status;
-
-	// Wait for the specified process to terminate
-	waitpid(pid, &status, 0);
-
-	// Check if the process terminated normally (WIFEXITED)
-	if (WIFEXITED(status) == 1)
-		return (WEXITSTATUS(status));  // Return the exit status of the process
-
-	// If the process did not terminate normally, return a default exit status (130)
-	return (130);
-}
 
 
 
@@ -1227,7 +1202,7 @@ int	ft_waitpid(pid_t pid)
  * Calls rl_redisplay() to refresh the display in the terminal.
  */
 
-void ft_signal_handler(int signal)
+void clear_input_on_interrupt(int signal)
 {
     if (signal == SIGINT)
     {
@@ -1254,7 +1229,7 @@ void ft_signal_handler(int signal)
  * The value 130 is derived from the standard exit code 128 plus the signal number (128 + 2, where SIGINT is signal number 2).
  * 
 */
-void	sig_handl_child(int signal)
+void	exit_on_interrupt(int signal)
 {
 	if (signal == SIGINT)
 	{
@@ -1272,7 +1247,7 @@ void	sig_handl_child(int signal)
  * t creates a pipe using the pipe system call. The pipe has two ends: fd[0] (read end) and fd[1] (write end).
  * It enters an infinite loop to read lines from the user using readline.
  * Inside the loop:
- * If the user enters a null line or a line matching the specified terminator (node->in_name), the loop is terminated.
+ * If the user enters a null line or a line matching the specified terminator (node->in_filename), the loop is terminated.
  * Otherwise, the function writes the line followed by a newline character to the write end of the pipe (fd[1]).
  * After the loop, it checks if line is not null (indicating a successful readline), and if so, frees the allocated memory for line.
  * It closes the write end of the pipe (fd[1]) and the original input file descriptor of the command (node->in_fd).
@@ -1291,8 +1266,8 @@ int	heredoc_function(t_cmd *node)
 		while (1)
 		{
 			line = readline("heredoc> ");
-			if (line == NULL || (ft_strncmp(line, node->in_name,
-						ft_strlen(node->in_name) + 1) == 0))
+			if (line == NULL || (ft_strncmp(line, node->in_filename,
+						ft_strlen(node->in_filename) + 1) == 0))
 				break ;
 			write(fd[1], line, ft_strlen(line));
 			write(fd[1], "\n", 1);
@@ -1305,7 +1280,7 @@ int	heredoc_function(t_cmd *node)
 	return (0);
 }
 
-static int	get_path(t_minishell *mini, t_cmd *node)
+static int	check_path(t_minishell *mini, t_cmd *node)
 {
 	char	*tmp;
 	int		i;
@@ -1315,7 +1290,7 @@ static int	get_path(t_minishell *mini, t_cmd *node)
 	i = 0;
 
 	// Check if the command name is valid
-	if (node->cmd[0] == NULL || ft_strlen(node->cmd[0]) == 0)
+	if (node->cmd_args[0] == NULL || ft_strlen(node->cmd_args[0]) == 0)
 		return (FALSE);
 
 	// Iterate through the directories in mini->path
@@ -1323,17 +1298,17 @@ static int	get_path(t_minishell *mini, t_cmd *node)
 	{
 		// Construct the full path for the executable
 		tmp = ft_strjoin(mini->exec_paths[i++], "/");
-		node->path = ft_strjoin(tmp, node->cmd[0]);
+		node->exec_path = ft_strjoin(tmp, node->cmd_args[0]);
 		free(tmp);
 
 		// Check if the constructed path is executable
-		res = access(node->path, X_OK);
+		res = access(node->exec_path, X_OK);
 		if (res == 0)
 			return (TRUE);
 
 		// Free the memory allocated for the current path
-		free(node->path);
-		node->path = NULL;
+		free(node->exec_path);
+		node->exec_path = NULL;
 	}
 
 	// Return FALSE if no valid path is found for the executable
@@ -1349,19 +1324,19 @@ static int	get_path(t_minishell *mini, t_cmd *node)
 void	ft_execve(t_cmd *node, t_minishell *mini, char **env)
 {
 	// If the path is not set and cannot be obtained, display an error and exit
-	if (node->path == NULL && get_path(mini, node) == FALSE)
+	if (node->exec_path == NULL && check_path(mini, node) == FALSE)
 	{
-		ft_strerror("command not found", node->cmd[0]);
+		ft_strerror("command not found", node->cmd_args[0]);
 		ft_close_two_fd(&node->in_fd, &node->out_fd);
 		exit(127);
 	}
 
 	// Execute the command using execve
-	if (execve(node->path, node->cmd, env) == -1)
+	if (execve(node->exec_path, node->cmd_args, env) == -1)
 	{
 		// If execve fails, display an error and exit
 		ft_close_two_fd(&node->in_fd, &node->out_fd);
-		ft_strerror(strerror(errno), node->cmd[0]);
+		ft_strerror(strerror(errno), node->cmd_args[0]);
 		exit(126);
 	}
 }
@@ -1381,13 +1356,13 @@ int	ft_execute_builtin(t_minishell *mini, t_cmd *cmd)
 		close(cmd->in_fd);
 	if (cmd->out_fd > 0)
 		close(cmd->out_fd);
-	if (ft_strncmp(cmd->cmd[0], "cd", 3) == 0)
+	if (ft_strncmp(cmd->cmd_args[0], "cd", 3) == 0)
 		res = ft_cd(mini, cmd);
-	else if (ft_strncmp(cmd->cmd[0], "export", 7) == 0)
+	else if (ft_strncmp(cmd->cmd_args[0], "export", 7) == 0)
 		res = ft_export(mini, cmd);
-	else if (ft_strncmp(cmd->cmd[0], "unset", 6) == 0)
+	else if (ft_strncmp(cmd->cmd_args[0], "unset", 6) == 0)
 		res = ft_unset(mini, cmd);
-	else if (ft_strncmp(cmd->cmd[0], "exit", 5) == 0)
+	else if (ft_strncmp(cmd->cmd_args[0], "exit", 5) == 0)
 		res = ft_exit(mini, cmd);
 	return (res);
 }
@@ -1402,10 +1377,10 @@ int	ft_execute_builtin(t_minishell *mini, t_cmd *cmd)
 void	ft_execute_fork_builtin(t_minishell *mini, t_cmd *cmd)
 {
 	// Check if the command is "echo"
-	if (ft_strncmp(cmd->cmd[0], "echo", 5) == 0)
+	if (ft_strncmp(cmd->cmd_args[0], "echo", 5) == 0)
 		ft_echo(cmd);
 	// Check if the command is "pwd"
-	else if (ft_strncmp(cmd->cmd[0], "pwd", 4) == 0)
+	else if (ft_strncmp(cmd->cmd_args[0], "pwd", 4) == 0)
 		ft_pwd(cmd);
 	// it's "env"
 	else
@@ -1418,7 +1393,7 @@ void	ft_execute_fork_builtin(t_minishell *mini, t_cmd *cmd)
 /*
  * function that handles input and output redirection before executing the command in the child process.
 */
-static int ft_in_out_handler(t_cmd *node, int is_builtin)
+static int ft_in_out_handler(t_cmd *node, int is_builtin_out)
 {
     // If input file descriptor is negative, duplicate standard input
     if (node->in_fd < 0)
@@ -1429,11 +1404,11 @@ static int ft_in_out_handler(t_cmd *node, int is_builtin)
         node->out_fd = dup(STDOUT_FILENO);
 
     // Handle here document (heredoc) if redirection is "<<"
-    if (node->redir_in && ft_strncmp(node->redir_in, "<<", ft_strlen("<<") + 1) == 0)
+    if (node->in_redir && ft_strncmp(node->in_redir, "<<", ft_strlen("<<") + 1) == 0)
         heredoc_function(node);
 
     // If it's not a command  echo, pwd, env, perform input redirection
-    if (is_builtin == FALSE)
+    if (is_builtin_out == FALSE)
     {
         if (dup2(node->in_fd, STDIN_FILENO) < 0)
             return (ft_strerror(strerror(errno), "dup2 error"), -2);
@@ -1507,11 +1482,38 @@ int	ft_is_builtin(char *str)
         );
 }
 
+
+/*
+ *
+ * The waitpid system call is used to wait for a specific child process (pid) to terminate. 
+ * The exit status of the process is stored in the status variable.
+ * The macro WIFEXITED(status) checks whether the child process terminated normally (exited). 
+ * If true (non-zero), the function returns the exit status using WEXITSTATUS(status).
+ * If the child process did not terminate normally (e.g., it was terminated by a signal), 
+ * the function returns a default exit status of 130. This value (130) is commonly used to indicate that the process was terminated 
+ * by a user interrupt (e.g., pressing Ctrl+C), and it's a convention used in some shells.
+ * 
+*/
+int	ft_waitpid(pid_t pid)
+{
+	int	status;
+
+	// Wait for the specified process to terminate
+	waitpid(pid, &status, 0);
+
+	// Check if the process terminated normally (WIFEXITED)
+	if (WIFEXITED(status) == 1)
+		return (WEXITSTATUS(status));  // Return the exit status of the process
+
+	// If the process did not terminate normally, return a default exit status (130)
+	return (130);
+}
+
 /*
  * part executor
  * function forks a child process using fork() and then executes the command in the child process.
  * signal handler for the SIGINT signal in the child process. This means that when the child process receives the SIGINT signal 
- * (which is typically triggered by pressing Ctrl+C in the terminal), the sig_handl_child function will be called.
+ * (which is typically triggered by pressing Ctrl+C in the terminal), the exit_on_interrupt function will be called.
  * signal(SIGINT, SIG_IGN); line is used to ignore the SIGINT signal in the current process. 
  * This means that if the process receives a SIGINT signal (typically sent when the user presses Ctrl+C in the terminal),
  * the default action of terminating the process will be ignored, and the process will continue running.
@@ -1519,11 +1521,11 @@ int	ft_is_builtin(char *str)
 int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
 {
     pid_t pid;
-    int is_builtin;
+    int is_builtin_out;
     int exit_status;
 
     // Check if the command is command echo, pwd, env that produces output
-    is_builtin = ft_is_builtin_with_output(node->cmd[0]);
+    is_builtin_out = ft_is_builtin_with_output(node->cmd_args[0]);
 
     // Fork a child process
     pid = fork();
@@ -1532,14 +1534,14 @@ int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
     else if (pid == 0)
     {
         // Child process
-        signal(SIGINT, sig_handl_child);
+        signal(SIGINT, exit_on_interrupt);
 
         // Execute the command in the child process
-        if (ft_in_out_handler(node, is_builtin) != 0)
+        if (ft_in_out_handler(node, is_builtin_out) != 0)
             return (-1);
 
         // If it's a builtin command echo, pwd, env, execute it in the child process
-        if (is_builtin)
+        if (is_builtin_out)
             ft_execute_fork_builtin(mini, node);
 
         // Execute the command using execve
@@ -1556,7 +1558,7 @@ int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
     exit_status = ft_waitpid(pid);
 
     // Restore the signal handler for SIGINT in the parent process
-    signal(SIGINT, ft_signal_handler);
+    signal(SIGINT, clear_input_on_interrupt);
 
     return (exit_status);
 }
@@ -1569,11 +1571,11 @@ int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
  */
 static void	ft_exe_ext_or_build(t_minishell *mini, t_cmd *tmp, char **envp)
 {
-	if (ft_is_builtin(tmp->cmd[0]) && !ft_is_builtin_with_output(tmp->cmd[0]))
+	if (ft_is_builtin(tmp->cmd_args[0]) && !ft_is_builtin_with_output(tmp->cmd_args[0]))
 		mini->exit_status = ft_execute_builtin(mini, tmp);
 	else
 		mini->exit_status = execute_cmd(tmp, mini, envp);
-	signal(SIGINT, ft_signal_handler);
+	signal(SIGINT, clear_input_on_interrupt);
 }
 
 
@@ -1632,11 +1634,11 @@ void ft_executor(t_minishell *mini, char **envp)
     while (tmp)
     {
         // Check for conditions where the command execution should be skipped
-        if (!tmp->cmd[0] || (tmp->cmd[0] && tmp->in_fd == -1))
+        if (!tmp->cmd_args[0] || (tmp->cmd_args[0] && tmp->in_fd == -1))
         {
             // Handle special case for HEREDOC error with an empty command
-            if (!tmp->cmd[0] && tmp->redir_in
-                && ft_strncmp(tmp->redir_in, "<<", ft_strlen("<<") + 1) == 0)
+            if (!tmp->cmd_args[0] && tmp->in_redir
+                && ft_strncmp(tmp->in_redir, "<<", ft_strlen("<<") + 1) == 0)
             {
                 ft_strerror("HEREDOC error", "empty command");
                 mini->exit_status = 1;
@@ -2406,20 +2408,20 @@ char	*get_name(t_elem **node, t_minishell *mini)
 */
 void	check_redir(t_cmd *new, enum e_token type)
 {
-	if (new->redir_in && (type == REDIR_IN || type == HERE_DOC))
+	if (new->in_redir && (type == REDIR_IN || type == HERE_DOC))
 	{
-		free(new->in_name);
-		new->in_name = NULL;
-		free(new->redir_in);
-		new->redir_in = NULL;
+		free(new->in_filename);
+		new->in_filename = NULL;
+		free(new->in_redir);
+		new->in_redir = NULL;
 	}
-	else if ((new->redir_out && type == REDIR_OUT)
-		|| (new->redir_out && type == DREDIR_OUT))
+	else if ((new->out_redir && type == REDIR_OUT)
+		|| (new->out_redir && type == DREDIR_OUT))
 	{
-		free(new->out_name);
-		new->out_name = NULL;
-		free(new->redir_out);
-		new->redir_out = NULL;
+		free(new->out_filename);
+		new->out_filename = NULL;
+		free(new->out_redir);
+		new->out_redir = NULL;
 	}
 }
 
@@ -2436,17 +2438,17 @@ void	parse_redir(t_elem **node, t_minishell *mini, t_cmd	*new)
 	type = (*node)->type;
 	check_redir(new, type);
 	if (type == REDIR_OUT || type == DREDIR_OUT)
-		new->redir_out = get_redir_symb(type);
+		new->out_redir = get_redir_symb(type);
 	else
-		new->redir_in = get_redir_symb(type);
+		new->in_redir = get_redir_symb(type);
 	while ((*node)->type != WORD && (*node)->type != ENV
 		&& (*node)->type != DOUBLE_QUOTE && (*node)->type != QOUTE)
 		*node = (*node)->next;
 	tmp = get_name(node, mini);
 	if (type == REDIR_OUT || type == DREDIR_OUT)
-		new->out_name = tmp;
+		new->out_filename = tmp;
 	else
-		new->in_name = tmp;
+		new->in_filename = tmp;
 }
 
 /*
@@ -2463,15 +2465,15 @@ t_cmd	*new_cmd_node_init(int size, int *i)
 	new = ft_calloc(sizeof(t_cmd), 1);
 	if (new == NULL)
 		return (NULL);
-	new->path = NULL;
-	new->cmd = ft_calloc((size + 1), sizeof(char *));
-	if (new->cmd == NULL)
+	new->exec_path = NULL;
+	new->cmd_args = ft_calloc((size + 1), sizeof(char *));
+	if (new->cmd_args == NULL)
 		return (NULL);
-	new->redir_in = NULL;
-	new->in_name = NULL;
+	new->in_redir = NULL;
+	new->in_filename = NULL;
 	new->in_fd = -2;
-	new->redir_out = NULL;
-	new->out_name = NULL;
+	new->out_redir = NULL;
+	new->out_filename = NULL;
 	new->out_fd = -3;
 	new->next = 0;
 	return (new);
@@ -2498,15 +2500,15 @@ t_cmd *new_cmd_node(t_elem **list, int size, t_minishell *mini)
     {
         // Check the type of the current token and perform parsing accordingly
         if ((*list)->type == WORD)
-            parse_word(list, new->cmd, &i);
+            parse_word(list, new->cmd_args, &i);
         else if ((*list)->type == ENV)
-            parse_env(list, new->cmd, &i, mini);
+            parse_env(list, new->cmd_args, &i, mini);
         else if ((*list)->type == WHITE_SPACE)
             (*list) = (*list)->next;
         else if ((*list)->type == DOUBLE_QUOTE || (*list)->type == QOUTE)
         {
-            new->cmd[i] = parse_quo(new->cmd[i], list, (*list)->type, mini);
-            if (new->cmd[i])
+            new->cmd_args[i] = parse_quo(new->cmd_args[i], list, (*list)->type, mini);
+            if (new->cmd_args[i])
                 i++;
         }
         else if (is_redir((*list)->type))
@@ -2514,7 +2516,7 @@ t_cmd *new_cmd_node(t_elem **list, int size, t_minishell *mini)
     }
 
     // Terminate the cmd array with NULL
-    new->cmd[i] = NULL;
+    new->cmd_args[i] = NULL;
     return (new);
 }
 
@@ -2658,10 +2660,10 @@ static void abs_path_check(t_cmd **head)
     while (current)
     {
         // Check if the command's path is already an absolute path
-        if (is_full(current->cmd[0]))
+        if (is_full(current->cmd_args[0]))
         {
             // If it is, set the path attribute to the absolute path
-            current->path = ft_strdup(current->cmd[0]);
+            current->exec_path = ft_strdup(current->cmd_args[0]);
             return; // Assuming that only one absolute path command is expected
         }
 
@@ -2833,8 +2835,8 @@ void ft_reset_values(t_minishell *mini)
  * (e.g., by the operating system or some runtime library), and the compiler should not allocate storage for it.
  * It is a global variable that holds a null-terminated array of strings,
  * where each string is in the form "name=value" representing an environment variable.
- * signal(SIGINT, ft_signal_handler); == signal handler for the SIGINT signal, which is typically generated when the user presses Ctrl+C 
- * When this signal is received, the function ft_signal_handler is called.
+ * signal(SIGINT, clear_input_on_interrupt); == signal handler for the SIGINT signal, which is typically generated when the user presses Ctrl+C 
+ * When this signal is received, the function clear_input_on_interrupt is called.
  * signal(SIGQUIT, SIG_IGN); == setting the action for the SIGQUIT signal to ignore (SIG_IGN)
  * SIGQUIT signal is generated by the terminal when the user presses Ctrl+\ 
 */
@@ -2845,7 +2847,7 @@ int	main(void)
 	/*
 	
 	*/
-	signal(SIGINT, ft_signal_handler);
+	signal(SIGINT, clear_input_on_interrupt);
 	signal(SIGQUIT, SIG_IGN);
 	ft_minishell_init(&mini, environ);
 	while (1)
@@ -2856,5 +2858,6 @@ int	main(void)
 	}
 	return (0);
 }
+
 
 
