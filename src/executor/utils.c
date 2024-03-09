@@ -12,8 +12,8 @@ int	heredoc_function(t_cmd *node)
 		while (1)
 		{
 			line = readline("heredoc> ");
-			if (line == NULL || (ft_strncmp(line, node->in_name,
-						ft_strlen(node->in_name) + 1) == 0))
+			if (line == NULL || (ft_strncmp(line, node->in_filename,
+						ft_strlen(node->in_filename) + 1) == 0))
 				break ;
 			write(fd[1], line, ft_strlen(line));
 			write(fd[1], "\n", 1);
@@ -34,18 +34,18 @@ static int	check_path(t_minishell *mini, t_cmd *node)
 
 	res = 0;
 	i = 0;
-	if (node->cmd[0] == NULL || ft_strlen(node->cmd[0]) == 0)
+	if (node->cmd_args[0] == NULL || ft_strlen(node->cmd_args[0]) == 0)
 		return (FALSE);
 	while (mini->exec_paths && mini->exec_paths[i])
 	{
 		tmp = ft_strjoin(mini->exec_paths[i++], "/");
-		node->path = ft_strjoin(tmp, node->cmd[0]);
+		node->exec_path = ft_strjoin(tmp, node->cmd_args[0]);
 		free(tmp);
-		res = access(node->path, X_OK);
+		res = access(node->exec_path, X_OK);
 		if (res == 0)
 			return (TRUE);
-		free(node->path);
-		node->path = NULL;
+		free(node->exec_path);
+		node->exec_path = NULL;
 	}
 	return (FALSE);
 }

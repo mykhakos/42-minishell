@@ -11,7 +11,7 @@ static int ft_in_out_handler(t_cmd *node, int is_builtin_out)
 	if (node->out_fd < 0)
 		node->out_fd = dup(STDOUT_FILENO);
 
-	if (node->redir_in && ft_strncmp(node->redir_in, "<<", ft_strlen("<<") + 1) == 0)
+	if (node->in_redir && ft_strncmp(node->in_redir, "<<", ft_strlen("<<") + 1) == 0)
 		heredoc_function(node);
 
 	if (is_builtin_out == FALSE)
@@ -29,13 +29,13 @@ static int ft_in_out_handler(t_cmd *node, int is_builtin_out)
 	return (0);
 }
 
-int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
+static int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
 {
     pid_t pid;
     int is_builtin_out;
     int exit_status;
 
-	is_builtin_out = ft_is_builtin_with_output(node->cmd[0]);
+	is_builtin_out = ft_is_builtin_with_output(node->cmd_args[0]);
 
 	pid = fork();
 	if (pid < 0)
@@ -61,7 +61,7 @@ int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
 
 static void	ft_exe_ext_or_build(t_minishell *mini, t_cmd *tmp, char **envp)
 {
-	if (ft_is_builtin(tmp->cmd[0]) && !ft_is_builtin_with_output(tmp->cmd[0]))
+	if (ft_is_builtin(tmp->cmd_args[0]) && !ft_is_builtin_with_output(tmp->cmd_args[0]))
 		mini->exit_status = ft_execute_builtin(mini, tmp);
 	else
 		mini->exit_status = execute_cmd(tmp, mini, envp);
@@ -90,11 +90,11 @@ void ft_executor(t_minishell *mini, char **envp)
 	tmp = mini->cmd_lst;
 	while (tmp)
 	{
-		if (!tmp->cmd[0] || (tmp->cmd[0] && tmp->in_fd == -1))
+		if (!tmp->cmd_args[0] || (tmp->cmd_args[0] && tmp->in_fd == -1))
         {
             // Handle special case for HEREDOC error with an empty command
-            if (!tmp->cmd[0] && tmp->redir_in
-                && ft_strncmp(tmp->redir_in, "<<", ft_strlen("<<") + 1) == 0)
+            if (!tmp->cmd_args[0] && tmp->in_redir
+                && ft_strncmp(tmp->in_redir, "<<", ft_strlen("<<") + 1) == 0)
             {
                 ft_strerror("HEREDOC error", "empty command");
                 mini->exit_status = 1;

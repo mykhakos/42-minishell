@@ -12,25 +12,25 @@
 static void open_infile(t_cmd *node, int *exit_st)
 {
     *exit_st = 0;
-    if (node->redir_in && ft_strncmp(node->redir_in, "<<", ft_strlen("<<")) == 0)
+    if (node->in_redir && ft_strncmp(node->in_redir, "<<", ft_strlen("<<")) == 0)
     {
         // If input redirection is "<<", duplicate STDIN_FILENO
         node->in_fd = dup(STDIN_FILENO);  // from unistd.h
         if (node->in_fd == -1)
         {
             // Handle error if duplication fails
-            ft_strerror(strerror(errno), node->in_name);
+            ft_strerror(strerror(errno), node->in_filename);
             *exit_st = 1; // Set exit status flag to 1
         }
     }
-    else if (node->redir_in)
+    else if (node->in_redir)
     {
         // If input redirection is a file name, open the file in read-only mode
-        node->in_fd = open(node->in_name, O_RDONLY, 0666);
+        node->in_fd = open(node->in_filename, O_RDONLY, 0666);
         if (node->in_fd == -1)
         {
             // Handle error if file opening fails
-            ft_strerror(strerror(errno), node->in_name);
+            ft_strerror(strerror(errno), node->in_filename);
             *exit_st = 1; // Set exit status flag to 1
         }
     }
@@ -48,18 +48,18 @@ static void open_infile(t_cmd *node, int *exit_st)
 */
 static void open_outfile(t_cmd *node, int *exit_st)
 {
-    if (node->redir_out)
+    if (node->out_redir)
     {
-        if (node->redir_out && ft_strncmp(node->redir_out, ">>", ft_strlen(">>") + 1) == 0)
-            node->out_fd = open(node->out_name, O_CREAT | O_RDWR | O_APPEND, 0666);
+        if (node->out_redir && ft_strncmp(node->out_redir, ">>", ft_strlen(">>") + 1) == 0)
+            node->out_fd = open(node->out_filename, O_CREAT | O_RDWR | O_APPEND, 0666);
         else
-            node->out_fd = open(node->out_name, O_CREAT | O_RDWR | O_TRUNC, 0666);
+            node->out_fd = open(node->out_filename, O_CREAT | O_RDWR | O_TRUNC, 0666);
     }
 
     if (node->out_fd == -1)
     {
         // Handle error if file opening fails
-        ft_strerror(strerror(errno), node->in_name);
+        ft_strerror(strerror(errno), node->in_filename);
         *exit_st = 1; // Set exit status flag to 1
     }
     else
