@@ -1,7 +1,10 @@
 #include "include/minishell.h"
 
-
-int	is_builtin_with_output(char *str)
+/*
+ * part executor.exexute_cmd
+ * 
+*/
+int	ft_is_builtin_with_output(char *str)
 {
 	return (
         ft_strncmp(str, "echo", 5) == 0 ||
@@ -11,9 +14,10 @@ int	is_builtin_with_output(char *str)
 }
 
 /*
+ * part executor
  * Checks if a given command is one of the built-in commands (e.g., echo, pwd, env, cd, export, unset, exit).
 */
-int	is_builtin(char *str)
+int	ft_is_builtin(char *str)
 {
 	return (
         is_builtin_with_output(str) ||
@@ -25,25 +29,26 @@ int	is_builtin(char *str)
 }
 
 /*
+ * part export, unset, init
  * extract the "PATH" variable from the environment variables and store its components (directories)
  * in the minishell->path array for later use. 
  * The assumption here is that the "PATH" variable contains directories separated by colons,
  *  and they are stored in minishell->path as an array of strings. 
 */
-void update_path(t_minishell *minishell)
+void ft_update_path(t_minishell *mini)
 {
-    t_node *curr;
+    t_env_var *current;
+    current = mini->env_var_lst;
 
-    curr = minishell->enviro;
-    while (curr != NULL)
+    while (current != NULL)
     {
-        if (ft_strncmp(curr->key, "PATH", 5) == 0)
+        if (ft_strncmp(current->key, "PATH", 5) == 0)
         {
-            minishell->path = ft_split(curr->value, ':');
-            return ;
+            mini->exec_paths = ft_split(current->value, ':');
+            return;
         }
-        curr = curr->next;
+        current = current->next;
     }
-    minishell->path = NULL;
+    mini->exec_paths = NULL;
     return;
 }
