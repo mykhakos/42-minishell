@@ -69,15 +69,6 @@ typedef struct s_elem
 } t_elem;
 
 /*
- * Represents a linked list of tokens for lexer
-*/
-typedef struct s_list_n
-{
-    t_elem *head;   // Pointer to the first token (head) in the linked list
-    t_elem *tail;   // Pointer to the last token (tail) in the linked list
-    int size;       // Represents the number of tokens in the linked list
-} t_list_n;
-
 typedef struct s_node_cmd
 {
     char *path;                 // Represents the path to the command executable
@@ -90,10 +81,48 @@ typedef struct s_node_cmd
     int out_fd;                 // Represents the file descriptor for output redirection
     struct s_node_cmd *next;    // Pointer to the next node in the linked list
 } t_node_cmd;
+*/
+
+typedef struct s_cmd
+{
+    char *path;                 // Represents the path to the command executable
+    char **cmd;                 // Represents the array of command arguments
+    char *redir_in;             // Represents the type of input redirection (e.g., "<")
+    char *in_name;              // Represents the input file name for redirection
+    int in_fd;                  // Represents the file descriptor for input redirection
+    char *redir_out;            // Represents the type of output redirection (e.g., ">")
+    char *out_name;             // Represents the output file name for redirection
+    int out_fd;                 // Represents the file descriptor for output redirection
+    struct s_cmd *next;    // Pointer to the next node in the linked list
+} t_cmd;
 
 /*
-linked list for environment variables
+ * Represents a linked list of tokens for lexer
+*//*
+typedef struct s_list_n
+{
+    t_elem *head;   // Pointer to the first token (head) in the linked list
+    t_elem *tail;   // Pointer to the last token (tail) in the linked list
+    int size;       // Represents the number of tokens in the linked list
+} t_list_n;
 */
+
+/*
+ * Represents a linked list of tokens for lexer
+*/
+typedef struct s_token
+{
+    t_elem *head;   // Pointer to the first token (head) in the linked list
+    t_elem *tail;   // Pointer to the last token (tail) in the linked list
+    int size;       // Represents the number of tokens in the linked list
+} t_token;
+
+
+
+/*
+ *
+ * linked list for environment variables
+*//*
 typedef struct s_node
 {
     char *key;           // Represents the key of the environment variable
@@ -101,10 +130,38 @@ typedef struct s_node
     char *value;         // Represents the value of the environment variable
     struct s_node *next; // Pointer to the next node in the linked list
 } t_node;
+*/
 
+/*
+linked list for environment variables
+*/
+typedef struct s_env_var
+{
+    char *key;           // Represents the key of the environment variable
+    char eq;             // Represents the equals sign ('=')
+    char *value;         // Represents the value of the environment variable
+    struct s_env_var *next; // Pointer to the next node in the linked list
+} t_env_var;
+
+typedef struct s_minishell
+{
+    char		**exec_paths;	// Array of strings representing the executable search paths
+    char		*input_line;	// Current input line
+    int			cmd_count;		// Number of commands in the input line
+    int			pipe_count;		// Number of pipes in the input line
+    int			*pipe_fd_arr;	// Array of file descriptors for pipes
+    char		*prompt;		// Shell prompt
+    char		*home_dir;		// Home directory path
+    char		*prev_cwd;		// Previous working directory path
+    int			exit_status;	// Exit status of the last command
+    t_env_var	*env_var_lst;	// Linked list representing environment variables
+    t_token	    *token_lst;		// Linked list representing lexical analysis of the input line
+    t_cmd   	*cmd_lst;		// Linked list representing parsed commands
+}	t_minishell;
+/*
 typedef struct s_data
 {
-    char		**path;      // Array of strings representing the executable search paths
+    char		**path;     // Array of strings representing the executable search paths
     char		*line;      // Current input line
     int			nbrofcom;   // Number of commands in the input line
     int			nbr_pipes;  // Number of pipes in the input line
@@ -117,27 +174,27 @@ typedef struct s_data
     t_list_n	*lex;       // Linked list representing lexical analysis of the input line
     t_node_cmd	*cmds;      // Linked list representing parsed commands
 }	t_data;
-
-void	path_clean(t_data *mini)
+*/
+void	path_clean(t_minishell *mini)
 {
 	int	i;
 
 	i = -1;
-	if (mini->path)
+	if (mini->exec_paths)
 	{
-		while (mini->path[++i])
-			free(mini->path[i]);
-		free(mini->path);
+		while (mini->exec_paths[++i])
+			free(mini->exec_paths[i]);
+		free(mini->exec_paths);
 	}
 }
 
 /*
  *  function is responsible for deallocating the memory occupied by a linked list of environment variables (t_node structure)
 */
-void	remove_env_list(t_node **head)
+void	remove_env_list(t_env_var **head)
 {
-	t_node	*tmp;
-	t_node	*current;
+	t_env_var	*tmp;
+	t_env_var	*current;
 
 	if (head == NULL || *head == NULL)
 		return ;
@@ -152,7 +209,7 @@ void	remove_env_list(t_node **head)
 	}
 }
 
-static void	remove_cmd_list_ext(t_node_cmd *current)
+static void	remove_cmd_list_ext(t_cmd *current)
 {
 	int	i;
 
@@ -187,10 +244,10 @@ static void	remove_cmd_list_ext(t_node_cmd *current)
  * The current pointer is updated to point to the next node (current = tmp).
  * After the loop, the head pointer (*head) is set to NULL to indicate an empty list.
  */
-void	remove_cmd_list(t_node_cmd **head)
+void	remove_cmd_list(t_cmd **head)
 {
-	t_node_cmd	*tmp;
-	t_node_cmd	*current;
+	t_cmd	*tmp;
+	t_cmd	*current;
 
 	if (head == NULL || *head == NULL)
 		return ;
@@ -214,7 +271,7 @@ void	remove_cmd_list(t_node_cmd **head)
  * The current pointer is updated to point to the next element (current = next).
  * After the loop, memory for the list structure (list) is freed using free.
  */
-void	free_list(t_list_n *list)
+void	free_list(t_token *list)
 {
 	t_elem	*next;
 	t_elem	*current;
@@ -232,24 +289,24 @@ void	free_list(t_list_n *list)
 	free(list);
 }
 
-void	ft_cleaning(t_data *mini)
+void	ft_cleaning(t_minishell *mini)
 {
 	path_clean(mini);
 	rl_clear_history();
-	if (mini->line)
-		free(mini->line);
-	if (mini->fd_pipes)
-		free(mini->fd_pipes);
+	if (mini->input_line)
+		free(mini->input_line);
+	if (mini->pipe_fd_arr)
+		free(mini->pipe_fd_arr);
 	free(mini->prompt);
-	remove_env_list(&mini->enviro);
-	if (mini->cmds)
-		remove_cmd_list(&mini->cmds);
-	if (mini->lex)
-		free_list(mini->lex);
-	if (mini->home)
-		free(mini->home);
-	if (mini->old_cwd)
-		free(mini->old_cwd);
+	remove_env_list(&mini->env_var_lst);
+	if (mini->cmd_lst)
+		remove_cmd_list(&mini->cmd_lst);
+	if (mini->token_lst)
+		free_list(mini->token_lst);
+	if (mini->home_dir)
+		free(mini->home_dir);
+	if (mini->prev_cwd)
+		free(mini->prev_cwd);
 }
 
 /*
@@ -339,159 +396,6 @@ char *ft_separate_value(char *env)
 }
 
 /*
- *   Checks if an environment variable specified in cmd->cmd[1] exists in the linked list.
- *   If it exists, replaces the current value with the new one obtained from cmd->cmd[1].
- *   Returns TRUE if the replacement is successful, otherwise returns FALSE.
-*/
-int	check_env_var_and_repl(t_node **head, t_node_cmd *cmd)
-{
-	t_node	*cur;
-	char	*tmp;
-
-	cur = *head;
-	tmp = ft_separate_key(cmd->cmd[1]);
-	while (cur)
-	{
-		if (ft_strncmp(cur->key, tmp, ft_strlen(tmp) + 1) == 0)
-		{
-			free(cur->value);
-			cur->value = ft_separate_value(cmd->cmd[1]);
-			free(tmp);
-			return (TRUE);
-		}
-		cur = cur->next;
-	}
-	free(tmp);
-	return (FALSE);
-}
-
-/*
- * Updates the values of environment variables "PWD" and "OLDPWD" 
- * based on the current working directory (cwd) and previous working directory (pcwd).
-*/
-void	ft_update_cwd(t_data *mini, char *cwd, char *pcwd)
-{
-	t_node	*current;
-
-	current = mini->enviro;
-	while (current != NULL)
-	{
-		if (ft_strncmp(current->key, "PWD", 4) == 0)
-		{
-			free(current->value);
-			current->value = ft_strdup(cwd);
-		}
-		if (ft_strncmp(current->key, "OLDPWD", 7) == 0)
-		{
-			free(current->value);
-			current->value = ft_strdup(pcwd);
-		}
-		current = current->next;
-	}
-}
-
-/*
- * Processes the command argument for cd and returns the updated path. 
- * It handles relative paths such as ".", "..", "./", and "../" by modifying the current working directory accordingly.
-*/
-char *dot_ext(char *pcwd, t_node_cmd *cmd)
-{
-	char *path[2];
-	char *tmp;
-
-	// Initialize variables
-	path[0] = NULL;
-	path[1] = NULL;
-	tmp = pcwd;
-
-	// Check if the command argument is ".", "./", or "../"
-	if (!ft_strncmp(cmd->cmd[1], ".", 2) || !ft_strncmp(cmd->cmd[1], "./", 3))
-		return (ft_strdup(pcwd));
-	else if (ft_strncmp(cmd->cmd[1], "..", 3) == 0 || ft_strncmp(cmd->cmd[1], "../", 4) == 0)
-		return (ft_substr(pcwd, 0, ft_strrchr(pcwd, '/') - pcwd));
-
-	// Handle cases where the command argument starts with "../"
-	path[0] = ft_strdup(pcwd);
-	while (ft_strncmp(cmd->cmd[1], "../", 3) == 0)
-	{
-		// Update path to parent directory
-		path[1] = ft_substr(path[0], 0, ft_strrchr(path[0], '/') - path[0]);
-		free(path[0]);
-		path[0] = path[1];
-
-		// Update command argument to remove "../"
-		tmp = ft_substr(cmd->cmd[1], 3, ft_strlen(cmd->cmd[1]) - 3);
-		free(cmd->cmd[1]);
-		cmd->cmd[1] = tmp;
-	}
-
-	// Combine path components
-	path[1] = ft_strjoin(path[0], "/");
-	free(path[0]);
-	tmp = ft_strjoin(path[1], cmd->cmd[1]);
-
-	// Clean up and return the updated path
-	return (free(path[1]), tmp);
-}
-
-/*
- *  Handles special cases for constructing the path argument for the cd command.
- *  Calls dot_ext when the argument starts with a dot ('.').
- *  Combines the home directory with the specified path in cmd->cmd[1] and returns the result.
-*/
-char	*get_arg_cd_ext(char *home, char *pcwd, t_node_cmd *cmd, char c)
-{
-	char	*res;
-	char	*tmp;
-
-	tmp = NULL;
-	res = NULL;
-	if (c == '.')
-		res = dot_ext(pcwd, cmd);
-	else
-	{
-		if (ft_strlen(cmd->cmd[1]) == 1)
-			return (ft_strdup(home));
-		if (cmd->cmd[1][1] == '/')
-			res = ft_strjoin(home, cmd->cmd[1] + 1);
-		else
-		{
-			tmp = ft_strjoin(home, "/");
-			res = ft_strjoin(tmp, cmd->cmd[1]);
-			free(tmp);
-		}
-	}
-	return (res);
-}
-
-/*
- *  Constructs the path argument for the cd command based on different cases.
- *  If no argument is provided, returns the home directory.
- *  If the argument is "-", returns the previous working directory.
- *  Handles cases where the argument starts with "~" or ".", calling get_arg_cd_ext accordingly.
- *  Otherwise, returns the specified argument.
-*/
-char	*get_arg_cd(t_node_cmd *cmd, char *home, char *old_cwd, char *pcwd)
-{
-	char	*res;
-
-	res = NULL;
-	if (cmd->cmd[1] == NULL)
-	{
-		if (home == NULL)
-			return (res);
-		res = ft_strdup(home);
-	}
-	else if (cmd->cmd[1] && ft_strncmp(cmd->cmd[1], "-", 2) == 0)
-		return (ft_strdup(old_cwd));
-	else if (cmd->cmd[1] && (cmd->cmd[1][0] == '~' || cmd->cmd[1][0] == '.'))
-		res = get_arg_cd_ext(home, pcwd, cmd, cmd->cmd[1][0]);
-	else
-		res = ft_strdup(cmd->cmd[1]);
-	return (res);
-}
-
-/*
  * Checks if a given string represents a numeric value.
 */
 int	ft_isnum(char *arg)
@@ -508,7 +412,7 @@ int	ft_isnum(char *arg)
 	return (TRUE);
 }
 
-static void ft_remove_node_ext(t_node *to_remove)
+static void ft_remove_node_ext(t_env_var *to_remove)
 {
 	// Free memory for the key, value, and the node itself
 	free(to_remove->key);
@@ -516,11 +420,11 @@ static void ft_remove_node_ext(t_node *to_remove)
 	free(to_remove);
 }
 
-void ft_remove_node(t_node **head, char *key)
+void ft_remove_node(t_env_var **head, char *key)
 {
-	t_node *current;
-	t_node *prev;
-	t_node *to_remove;
+	t_env_var *current;
+	t_env_var *prev;
+	t_env_var *to_remove;
 	int first;
 
 	// Check if the head of the list is NULL or if the key is NULL
@@ -557,39 +461,6 @@ void ft_remove_node(t_node **head, char *key)
     }
 }
 
-/*
- * extract the "PATH" variable from the environment variables and store its components (directories)
- * in the mini->path array for later use. 
- * The assumption here is that the "PATH" variable contains directories separated by colons,
- *  and they are stored in mini->path as an array of strings. 
-*/
-void ft_path_filler(t_data *mini)
-{
-    t_node *current;
-
-    // Initialize the current node to the head of the linked list
-    current = mini->enviro;
-
-    // Traverse the linked list
-    while (current != NULL)
-    {
-        // Check if the current node's key is "PATH"
-        if (ft_strncmp(current->key, "PATH", 5) == 0)
-        {
-            // Split the value of "PATH" using ':' as the delimiter and store in mini->path
-            mini->path = ft_split(current->value, ':');
-            return;
-        }
-
-        // Move to the next node in the linked list
-        current = current->next;
-    }
-
-    // If "PATH" is not found, set mini->path to NULL
-    mini->path = NULL;
-    return;
-}
-
 void	ft_strerror(char *msg, char *name)
 {
 	ft_putstr_fd(msg, 2);
@@ -598,78 +469,13 @@ void	ft_strerror(char *msg, char *name)
 	ft_putstr_fd("\n", 2);
 }
 
-/*
- *  Checks if a command is a valid identifier for the export command.
- *  Verifies that the command starts with an alphabet character or an underscore, and contains an equal sign (=).
-*/
-static int	ex_command_tester(char *comm)
-{
-	int	i;
-
-	i = 0;
-	if (ft_strlen(comm) <= 1)
-	{
-		ft_strerror(comm, "not a valid identifier");
-		return (0);
-	}
-	if (!ft_isalpha(comm[0]) && comm[0] != 95)
-	{
-		ft_strerror(comm, "not a valid identifier");
-		return (0);
-	}
-	while (comm[i])
-	{
-		if (comm[i] == 61)
-			return (1);
-		i++;
-	}
-	ft_strerror(comm, "not a valid identifier");
-	return (0);
-}
-
-/*
- * linked list manipulation, specifically adding nodes to the end of the linked list to represent environment variables.
- * It extracts the key and value from the environment variable string env using the ft_separate_key and ft_separate_value functions.
- */
-void ft_add_end(t_node **head, char *env)
-{
-    t_node *new_node;
-    t_node *current;
-
-    // Allocate memory for a new node
-    new_node = ft_calloc(sizeof(t_node), 1);
-    if (new_node == NULL)
-        return;
-
-    // Set the key, equals sign, and value of the new node based on the environment variable
-    new_node->key = ft_separate_key(env);
-    new_node->eq = '=';
-    new_node->value = ft_separate_value(env);
-    new_node->next = NULL;
-
-    // If the linked list is empty, make the new node the head
-    if (*head == NULL)
-    {
-        *head = new_node;
-        return;
-    }
-
-    // Traverse the linked list to find the last node
-    current = *head;
-    while (current->next != NULL)
-        current = current->next;
-
-    // Add the new node to the end of the linked list
-    current->next = new_node;
-}
-
 
 /*  ********  BUILTINS ********* */
 /*
  *
  * implement the behavior of the echo command
 */
-int	ft_echo(t_node_cmd *cmd)
+int	ft_echo(t_cmd *cmd)
 {
 	int	i;
 	int	no_n;
@@ -715,7 +521,7 @@ int	ft_echo(t_node_cmd *cmd)
  * If the getcwd operation is successful (returns a non-NULL value), it prints the current working directory followed by a newline character.
  * The (void)cmd; statement is used to indicate that the cmd parameter is intentionally not used in the function, suppressing any unused parameter warnings from the compiler.
 */
-void ft_pwd(t_node_cmd *cmd)
+void ft_pwd(t_cmd *cmd)
 {
     char cwd[1024];
 
@@ -737,15 +543,15 @@ void ft_pwd(t_node_cmd *cmd)
  * For each node in the linked list, it prints the key, equal sign, and value of the environment variable.
  * The continue statement is used to skip the printing of specific variables and move to the next iteration of the loop.
 */
-void ft_env(t_data *mini)
+void ft_env(t_minishell *mini)
 {
-    t_node *current;
+    t_env_var *current;
 
     // Check if the environment linked list is not empty
-    if (mini->enviro)
+    if (mini->env_var_lst)
     {
         // Iterate through the linked list and print environment variables
-        current = mini->enviro;
+        current = mini->env_var_lst;
         while (current != NULL)
         {
             // Skip printing specific environment variables (LINES, COLUMNS)
@@ -765,13 +571,139 @@ void ft_env(t_data *mini)
     }
 }
 
+/*
+ * part of cd
+ * Updates the values of environment variables "PWD" and "OLDPWD" 
+ * based on the current working directory (cwd) and previous working directory (pcwd).
+*/
+void	ft_cd_update_cwd(t_minishell *mini, char *cwd, char *pcwd)
+{
+	t_env_var	*current;
+
+	current = mini->env_var_lst;
+	while (current != NULL)
+	{
+		if (ft_strncmp(current->key, "PWD", 4) == 0)
+		{
+			free(current->value);
+			current->value = ft_strdup(cwd);
+		}
+		if (ft_strncmp(current->key, "OLDPWD", 7) == 0)
+		{
+			free(current->value);
+			current->value = ft_strdup(pcwd);
+		}
+		current = current->next;
+	}
+}
+
+/*
+ * Processes the command argument for cd and returns the updated path. 
+ * It handles relative paths such as ".", "..", "./", and "../" by modifying the current working directory accordingly.
+*/
+char *cd_dot_ext(char *pcwd, t_cmd *cmd)
+{
+	char *path[2];
+	char *tmp;
+
+	// Initialize variables
+	path[0] = NULL;
+	path[1] = NULL;
+	tmp = pcwd;
+
+	// Check if the command argument is ".", "./", or "../"
+	if (!ft_strncmp(cmd->cmd[1], ".", 2) || !ft_strncmp(cmd->cmd[1], "./", 3))
+		return (ft_strdup(pcwd));
+	else if (ft_strncmp(cmd->cmd[1], "..", 3) == 0 || ft_strncmp(cmd->cmd[1], "../", 4) == 0)
+		return (ft_substr(pcwd, 0, ft_strrchr(pcwd, '/') - pcwd));
+
+	// Handle cases where the command argument starts with "../"
+	path[0] = ft_strdup(pcwd);
+	while (ft_strncmp(cmd->cmd[1], "../", 3) == 0)
+	{
+		// Update path to parent directory
+		path[1] = ft_substr(path[0], 0, ft_strrchr(path[0], '/') - path[0]);
+		free(path[0]);
+		path[0] = path[1];
+
+		// Update command argument to remove "../"
+		tmp = ft_substr(cmd->cmd[1], 3, ft_strlen(cmd->cmd[1]) - 3);
+		free(cmd->cmd[1]);
+		cmd->cmd[1] = tmp;
+	}
+
+	// Combine path components
+	path[1] = ft_strjoin(path[0], "/");
+	free(path[0]);
+	tmp = ft_strjoin(path[1], cmd->cmd[1]);
+
+	// Clean up and return the updated path
+	return (free(path[1]), tmp);
+}
+
+/*
+ *  Handles special cases for constructing the path argument for the cd command.
+ *  Calls dot_ext when the argument starts with a dot ('.').
+ *  Combines the home directory with the specified path in cmd->cmd[1] and returns the result.
+*/
+char	*get_arg_cd_ext(char *home, char *pcwd, t_cmd *cmd, char c)
+{
+	char	*res;
+	char	*tmp;
+
+	tmp = NULL;
+	res = NULL;
+	if (c == '.')
+		res = cd_dot_ext(pcwd, cmd);
+	else
+	{
+		if (ft_strlen(cmd->cmd[1]) == 1)
+			return (ft_strdup(home));
+		if (cmd->cmd[1][1] == '/')
+			res = ft_strjoin(home, cmd->cmd[1] + 1);
+		else
+		{
+			tmp = ft_strjoin(home, "/");
+			res = ft_strjoin(tmp, cmd->cmd[1]);
+			free(tmp);
+		}
+	}
+	return (res);
+}
+
+/*
+ *  Constructs the path argument for the cd command based on different cases.
+ *  If no argument is provided, returns the home directory.
+ *  If the argument is "-", returns the previous working directory.
+ *  Handles cases where the argument starts with "~" or ".", calling get_arg_cd_ext accordingly.
+ *  Otherwise, returns the specified argument.
+*/
+char	*get_arg_cd(t_cmd *cmd, char *home, char *old_cwd, char *pcwd)
+{
+	char	*res;
+
+	res = NULL;
+	if (cmd->cmd[1] == NULL)
+	{
+		if (home == NULL)
+			return (res);
+		res = ft_strdup(home);
+	}
+	else if (cmd->cmd[1] && ft_strncmp(cmd->cmd[1], "-", 2) == 0)
+		return (ft_strdup(old_cwd));
+	else if (cmd->cmd[1] && (cmd->cmd[1][0] == '~' || cmd->cmd[1][0] == '.'))
+		res = get_arg_cd_ext(home, pcwd, cmd, cmd->cmd[1][0]);
+	else
+		res = ft_strdup(cmd->cmd[1]);
+	return (res);
+}
 
 /*
  *  Changes the current working directory.
  *  Handles various cases, such as changing to the home directory, the previous directory, or a specified directory.
- *  Updates the mini->old_cwd and mini->cwd accordingly.
+ *  Updates the mini->prev_cwd and mini->cwd accordingly.
  */
-int	ft_cd(t_data *mini, t_node_cmd *cmd)
+int	ft_cd(t_minishell *mini, t_cmd *cmd)
 {
 	char	cwd[1024];
 	char	pcwd[1024];
@@ -783,7 +715,7 @@ int	ft_cd(t_data *mini, t_node_cmd *cmd)
 		return (1);
 	}
 	getcwd(pcwd, 1024);
-	dest = get_arg_cd(cmd, mini->home, mini->old_cwd, pcwd);
+	dest = get_arg_cd(cmd, mini->home_dir, mini->prev_cwd, pcwd);
 	if (chdir(dest) == -1)
 	{
 		ft_strerror(strerror(errno), dest);
@@ -791,11 +723,140 @@ int	ft_cd(t_data *mini, t_node_cmd *cmd)
 		return (1);
 	}
 	getcwd(cwd, 1024);
-	free(mini->old_cwd);
-	mini->old_cwd = ft_strdup(pcwd);
-	ft_update_cwd(mini, cwd, pcwd);
+	free(mini->prev_cwd);
+	mini->prev_cwd = ft_strdup(pcwd);
+	ft_cd_update_cwd(mini, cwd, pcwd);
 	free(dest);
 	return (0);
+}
+
+/*
+ *   part export
+ *   Checks if an environment variable specified in cmd->cmd[1] exists in the linked list.
+ *   If it exists, replaces the current value with the new one obtained from cmd->cmd[1].
+ *   Returns TRUE if the replacement is successful, otherwise returns FALSE.
+*/
+int	check_env_var_and_repl(t_env_var **head, t_cmd *cmd)
+{
+	t_env_var	*cur;
+	char	*tmp;
+
+	cur = *head;
+	tmp = ft_separate_key(cmd->cmd[1]);
+	while (cur)
+	{
+		if (ft_strncmp(cur->key, tmp, ft_strlen(tmp) + 1) == 0)
+		{
+			free(cur->value);
+			cur->value = ft_separate_value(cmd->cmd[1]);
+			free(tmp);
+			return (TRUE);
+		}
+		cur = cur->next;
+	}
+	free(tmp);
+	return (FALSE);
+}
+
+/*
+ * part export, create env_list
+ * linked list manipulation, specifically adding nodes to the end of the linked list to represent environment variables.
+ * It extracts the key and value from the environment variable string env using the ft_separate_key and ft_separate_value functions.
+ */
+void ft_add_end(t_env_var **head, char *env)
+{
+    t_env_var *new_node;
+    t_env_var *current;
+
+    // Allocate memory for a new node
+    new_node = ft_calloc(sizeof(t_env_var), 1);
+    if (new_node == NULL)
+        return;
+
+    // Set the key, equals sign, and value of the new node based on the environment variable
+    new_node->key = ft_separate_key(env);
+    new_node->eq = '=';
+    new_node->value = ft_separate_value(env);
+    new_node->next = NULL;
+
+    // If the linked list is empty, make the new node the head
+    if (*head == NULL)
+    {
+        *head = new_node;
+        return;
+    }
+
+    // Traverse the linked list to find the last node
+    current = *head;
+    while (current->next != NULL)
+        current = current->next;
+
+    // Add the new node to the end of the linked list
+    current->next = new_node;
+}
+
+/*
+ *  part export
+ *  Checks if a command is a valid identifier for the export command.
+ *  Verifies that the command starts with an alphabet character or an underscore, and contains an equal sign (=).
+*/
+static int	ex_command_tester(char *comm)
+{
+	int	i;
+
+	i = 0;
+	if (ft_strlen(comm) <= 1)
+	{
+		ft_strerror(comm, "not a valid identifier");
+		return (0);
+	}
+	if (!ft_isalpha(comm[0]) && comm[0] != 95)
+	{
+		ft_strerror(comm, "not a valid identifier");
+		return (0);
+	}
+	while (comm[i])
+	{
+		if (comm[i] == 61)
+			return (1);
+		i++;
+	}
+	ft_strerror(comm, "not a valid identifier");
+	return (0);
+}
+
+/*
+ * part export, unset, init
+ * extract the "PATH" variable from the environment variables and store its components (directories)
+ * in the mini->exec_paths array for later use. 
+ * The assumption here is that the "PATH" variable contains directories separated by colons,
+ *  and they are stored in mini->path as an array of strings. 
+*/
+void ft_update_path(t_minishell *mini)
+{
+    t_env_var *current;
+
+    // Initialize the current node to the head of the linked list
+    current = mini->env_var_lst;
+
+    // Traverse the linked list
+    while (current != NULL)
+    {
+        // Check if the current node's key is "PATH"
+        if (ft_strncmp(current->key, "PATH", 5) == 0)
+        {
+            // Split the value of "PATH" using ':' as the delimiter and store in mini->path
+            mini->exec_paths = ft_split(current->value, ':');
+            return;
+        }
+
+        // Move to the next node in the linked list
+        current = current->next;
+    }
+
+    // If "PATH" is not found, set mini->exec_paths to NULL
+    mini->exec_paths = NULL;
+    return;
 }
 
 /*
@@ -805,21 +866,21 @@ int	ft_cd(t_data *mini, t_node_cmd *cmd)
  *  Cleans the mini->path array, then refills it with the updated environment variables.
  *  Prints the exported environment variables.
 */
-int	ft_export(t_data *mini, t_node_cmd *cmd)
+int	ft_export(t_minishell *mini, t_cmd *cmd)
 {
-	t_node	*cur;
+	t_env_var	*cur;
 
 	if (cmd->cmd[1])
 	{
 		if (!ex_command_tester(cmd->cmd[1]))
 			return (2);
-		if (check_env_var_and_repl(&mini->enviro, cmd) == FALSE)
-			ft_add_end(&mini->enviro, cmd->cmd[1]);
+		if (check_env_var_and_repl(&mini->env_var_lst, cmd) == FALSE)
+			ft_add_end(&mini->env_var_lst, cmd->cmd[1]);
 		path_clean(mini);
-		ft_path_filler(mini);
+		ft_update_path(mini);
 		return (0);
 	}
-	cur = mini->enviro;
+	cur = mini->env_var_lst;
 	while (cur != NULL)
 	{
 		if (ft_strncmp(cur->key, "LINES", 6) != 0
@@ -835,28 +896,28 @@ int	ft_export(t_data *mini, t_node_cmd *cmd)
  * Calls ft_remove_node to remove the corresponding node from the linked list.
  * Clears the mini->path array and refills it with the updated environment variables.
 */
-int	ft_unset(t_data *mini, t_node_cmd *cmd)
+int	ft_unset(t_minishell *mini, t_cmd *cmd)
 {
-	t_node	*current;
+	t_env_var	*current;
 	int		i;
 
 	i = 0;
 	if (!cmd->cmd[1])
 		return (0);
-	current = mini->enviro;
+	current = mini->env_var_lst;
 	while (current != NULL)
 	{
 		if (ft_strncmp(current->key, cmd->cmd[1], ft_strlen(cmd->cmd[1])) == 0)
 		{
-			ft_remove_node(&mini->enviro, cmd->cmd[1]);
-			if (mini->path != NULL)
+			ft_remove_node(&mini->env_var_lst, cmd->cmd[1]);
+			if (mini->exec_paths != NULL)
 			{
-				while (mini->path[i])
-					free(mini->path[i++]);
-				free(mini->path);
-				mini->path = NULL;
+				while (mini->exec_paths[i])
+					free(mini->exec_paths[i++]);
+				free(mini->exec_paths);
+				mini->exec_paths = NULL;
 			}
-			return (ft_path_filler(mini), 0);
+			return (ft_update_path(mini), 0);
 		}
 		else
 			current = current->next;
@@ -869,7 +930,7 @@ int	ft_unset(t_data *mini, t_node_cmd *cmd)
  *  If an argument is provided, it is interpreted as the exit code. If no argument is provided, the exit code is 0.
  *  Prints an error message if the argument is not a numeric value.
 */
-int	ft_exit(t_data *mini, t_node_cmd *cmd)
+int	ft_exit(t_minishell *mini, t_cmd *cmd)
 {
 	int	res;
 
@@ -894,85 +955,87 @@ int	ft_exit(t_data *mini, t_node_cmd *cmd)
 }
 
 /*
- * Checks if a given command is one of the built-in commands (e.g., echo, pwd, env, cd, export, unset, exit).
+ *
+ * function checks whether each file descriptor (fd1 and fd2) is greater than 0, indicating that it is a valid file descriptor. 
+ * If so, it closes the file descriptor using the close system call and updates the value to -2 or -3, depending on whether it's the first or second file descriptor.
+ * The use of these specific values (-2 and -3) after closing the file descriptors might be indicative of some special meaning or state in the context of the program's design.
+ * It's common in Unix-like systems to use negative values to represent certain states or flags.
+ * 
 */
-int	ft_is_builtin(char *str)
+void	ft_close_two_fd(int *fd1, int *fd2)
 {
-	if (ft_strncmp(str, "echo", 5) == 0)
-		return (TRUE);
-	else if (ft_strncmp(str, "pwd", 4) == 0)
-		return (TRUE);
-	else if (ft_strncmp(str, "env", 4) == 0)
-		return (TRUE);
-	else if (ft_strncmp(str, "cd", 3) == 0)
-		return (TRUE);
-	else if (ft_strncmp(str, "export", 7) == 0)
-		return (TRUE);
-	else if (ft_strncmp(str, "unset", 6) == 0)
-		return (TRUE);
-	else if (ft_strncmp(str, "exit", 5) == 0)
-		return (TRUE);
-	return (FALSE);
+	// If fd1 is a valid file descriptor, close it and update to -2
+	if (*fd1 > 0)
+	{
+		close(*fd1);
+		*fd1 = -2;
+	}
+
+	// If fd2 is a valid file descriptor, close it and update to -3
+	if (*fd2 > 0)
+	{
+		close(*fd2);
+		*fd2 = -3;
+	}
 }
 
 /*
- * Executes a built-in command by calling the appropriate function
- * for the corresponding built-in command (e.g., ft_cd, ft_export, ft_unset, ft_exit).
+ * part executor
+ * Function closes all the file descriptors associated with pipes in the mini structure
+ * The function uses a loop to iterate through the array mini->pipe_fd_arr, which contains file descriptors associated with pipes.
+ * For each iteration, it calls the ft_close_two_fd function to close the read and write ends of the pipe. This is done by passing the addresses of the current pair of file descriptors.
+ * The loop increments i by 2 in each iteration to move to the next pair of file descriptors in the array.
 */
-int	ft_execute_builtin(t_data *mini, t_node_cmd *cmd)
+void ft_close_pipes(t_minishell *mini)
 {
-	int	res;
+    int i;
 
-	res = 0;
-	if (cmd->in_fd > 0)
-		close(cmd->in_fd);
-	if (cmd->out_fd > 0)
-		close(cmd->out_fd);
-	if (ft_strncmp(cmd->cmd[0], "cd", 3) == 0)
-		res = ft_cd(mini, cmd);
-	else if (ft_strncmp(cmd->cmd[0], "export", 7) == 0)
-		res = ft_export(mini, cmd);
-	else if (ft_strncmp(cmd->cmd[0], "unset", 6) == 0)
-		res = ft_unset(mini, cmd);
-	else if (ft_strncmp(cmd->cmd[0], "exit", 5) == 0)
-		res = ft_exit(mini, cmd);
-	return (res);
+    i = 0;
+
+    // Iterate through the array of pipe-related file descriptors
+    while (i < mini->pipe_count * 2)
+    {
+        // Close the read and write ends of the pipe
+        ft_close_two_fd(&mini->pipe_fd_arr[i], &mini->pipe_fd_arr[i + 1]);
+
+        // Move to the next pair of file descriptors
+        i += 2;
+    }
 }
 
-
-
 /*
+ * part executor
  * function is responsible for creating pipes needed for inter-process communication between commands.
- * It allocates an array of file descriptors (mini->fd_pipes) and initializes them using the pipe system call.
- * checks if there is more than one command (mini->nbrofcom > 1) and dynamically allocates space for the array of file descriptors.
+ * It allocates an array of file descriptors (mini->pipe_fd_arr) and initializes them using the pipe system call.
+ * checks if there is more than one command (mini->cmd_count > 1) and dynamically allocates space for the array of file descriptors.
  *  It then uses a loop to create pipes using the pipe system call, updating the array of file descriptors accordingly.
  *
 */
-int	create_pipes(t_data	*mini)
+int	create_pipes(t_minishell	*mini)
 {
 	int	i;
 
 	i = 0;
-	if (mini->nbrofcom > 1)
-		mini->fd_pipes = (int *)malloc(sizeof(int) * mini->nbr_pipes * 2);
-	while (i < mini->nbr_pipes * 2)
+	if (mini->cmd_count > 1)
+		mini->pipe_fd_arr = (int *)malloc(sizeof(int) * mini->pipe_count * 2);
+	while (i < mini->pipe_count * 2)
 	{
-		if (pipe(mini->fd_pipes + i) == -1) // from unistd.h
+		if (pipe(mini->pipe_fd_arr + i) == -1) // from unistd.h
 			return (ft_strerror("Pipes creating", "error"), -1);
 		i += 2;
 	}
 	return (0);
 }
 
-
 /*
+ * part open redirs
  * If the redir_in field of the command is not NULL and its value is "<<", it duplicates the standard input file descriptor 
  *(STDIN_FILENO) using the dup system call. 
  * This is often used for here documents or here strings, where the input is provided directly in the command.
  * If the redir_in field is not NULL and does not match "<<", it assumes that the input is redirected from a file. 
  * In this case, it opens the specified file (node->in_name) in read-only mode using the open system call.
 */
-static void open_infile(t_node_cmd *node, int *exit_st)
+static void open_infile(t_cmd *node, int *exit_st)
 {
     *exit_st = 0;
     if (node->redir_in && ft_strncmp(node->redir_in, "<<", ft_strlen("<<")) == 0)
@@ -1000,7 +1063,8 @@ static void open_infile(t_node_cmd *node, int *exit_st)
 }
 
 /*
- * function is responsible for handling the output file redirection for a given command (t_node_cmd).
+ * part open redirs
+ * function is responsible for handling the output file redirection for a given command (t_cmd).
  * It checks the type of output redirection specified in the command (node->redir_out) and performs the necessary actions 
  * to set up the output file descriptor (node->out_fd).
  * If the redir_out field of the command is not NULL, it checks whether the value is ">>" (append mode) using ft_strncmp. If true, it opens the specified file (node->out_name) in append mode (O_APPEND). Otherwise, it opens the file in write mode with truncation (O_TRUNC).
@@ -1008,7 +1072,7 @@ static void open_infile(t_node_cmd *node, int *exit_st)
  * If the file opening is successful, it sets the exit_st flag to 0.
  *
 */
-static void open_outfile(t_node_cmd *node, int *exit_st)
+static void open_outfile(t_cmd *node, int *exit_st)
 {
     if (node->redir_out)
     {
@@ -1031,23 +1095,24 @@ static void open_outfile(t_node_cmd *node, int *exit_st)
 }
 
 /*
- * The open_redirs function is responsible for iterating over the commands in the mini data structure 
+ * part executor
+ * The ft_redirect_inputs_outputs function is responsible for iterating over the commands in the mini data structure 
  * and performing the necessary setup for input and output redirection for each command by calling
  * the open_outfile and open_infile functions.
 */
-void open_redirs(t_data *mini)
+void ft_redirect_inputs_outputs(t_minishell *mini)
 {
-    t_node_cmd *tmp;
+    t_cmd *tmp;
 
     // Iterate over the commands in the mini data structure
-    tmp = mini->cmds;
+    tmp = mini->cmd_lst;
     while (tmp)
     {
         // Handle output file redirection
-        open_outfile(tmp, &mini->exitstatus);
+        open_outfile(tmp, &mini->exit_status);
 
         // Handle input file redirection
-        open_infile(tmp, &mini->exitstatus);
+        open_infile(tmp, &mini->exit_status);
 
         // Move to the next command
         tmp = tmp->next;
@@ -1058,45 +1123,46 @@ void open_redirs(t_data *mini)
  * This function is an extension of the assign_fds function and is called when handling the first command in the pipeline (first == TRUE).
  * 
  */
-static void assign_fds_ext(t_data *mini, t_node_cmd *tmp, int *flag)
+static void assign_fds_ext(t_minishell *mini, t_cmd *tmp, int *flag)
 {
     if (tmp->out_fd == -3)
     {
         // Output should be connected to a pipe
-        tmp->out_fd = mini->fd_pipes[1]; 	// assigns mini->fd_pipes[1] (write end of the pipe) to tmp->out_fd.
+        tmp->out_fd = mini->pipe_fd_arr[1]; 	// assigns mini->pipe_fd_arr[1] (write end of the pipe) to tmp->out_fd.
     }
     else
     {
         // Output is redirected elsewhere, close the write end of the pipe
-        close(mini->fd_pipes[1]); 
-        mini->fd_pipes[1] = -2; // Indicate that the pipe is not needed
+        close(mini->pipe_fd_arr[1]); 
+        mini->pipe_fd_arr[1] = -2; // Indicate that the pipe is not needed
     }
 
     *flag = FALSE;
 }
 
 /*
+ * part executor
  * This function assigns file descriptors (in_fd and out_fd) for each command in the pipeline.
- * It iterates through the linked list of command nodes (t_node_cmd).
+ * It iterates through the linked list of command nodes (t_cmd).
  * For the first command (first == TRUE), it calls assign_fds_ext.
  * For subsequent commands (first == FALSE), it assigns file descriptors based on whether input/output redirections are specified. 
- * It also updates the indices for mini->fd_pipes.
+ * It also updates the indices for mini->pipe_fd_arr.
  * If a command is the last in the pipeline (tmp->next == NULL), and the input file descriptor is set to -2, 
- * it means the input should come from a pipe. In this case, it sets tmp->in_fd to mini->fd_pipes[mini->nbr_pipes * 2 - 2].
- * The expression fd_pipes[mini->nbr_pipes * 2 - 2] is indexing the array fd_pipes to obtain the file descriptor corresponding to the last pipe.
- * mini->nbr_pipes: This is the number of pipes needed for the commands. Each pipe requires two file descriptors (one for reading, one for writing).
- * mini->nbr_pipes * 2: This calculates the total number of file descriptors needed for all the pipes.
- * mini->nbr_pipes * 2 - 2: Subtracting 2 gives the index of the last file descriptor in the array, as array indices are 0-based.
- * So, fd_pipes[mini->nbr_pipes * 2 - 2] retrieves the file descriptor for the last pipe's read end. This file descriptor is used to connect the input of the last command to the output of the second-to-last command, effectively chaining the commands together through pipes.
+ * it means the input should come from a pipe. In this case, it sets tmp->in_fd to mini->pipe_fd_arr[mini->pipe_count * 2 - 2].
+ * The expression pipe_fd_arr[mini->pipe_count * 2 - 2] is indexing the array pipe_fd_arr to obtain the file descriptor corresponding to the last pipe.
+ * mini->pipe_count: This is the number of pipes needed for the commands. Each pipe requires two file descriptors (one for reading, one for writing).
+ * mini->pipe_count * 2: This calculates the total number of file descriptors needed for all the pipes.
+ * mini->pipe_count * 2 - 2: Subtracting 2 gives the index of the last file descriptor in the array, as array indices are 0-based.
+ * So, pipe_fd_arr[mini->pipe_count * 2 - 2] retrieves the file descriptor for the last pipe's read end. This file descriptor is used to connect the input of the last command to the output of the second-to-last command, effectively chaining the commands together through pipes.
 */
-static void assign_fds(t_data *mini)
+static void assign_fds(t_minishell *mini)
 {
-    t_node_cmd *tmp;
+    t_cmd *tmp;
     int first;
     int i;
 
     i = 0;
-    tmp = mini->cmds;
+    tmp = mini->cmd_lst;
     first = TRUE;
 
     while (tmp)
@@ -1106,29 +1172,22 @@ static void assign_fds(t_data *mini)
             assign_fds_ext(mini, tmp, &first);
         // For the last command, if input file descriptor is unassigned, connect it to the last pipe
 		else if (first == FALSE && tmp->next == NULL && tmp->in_fd == -2)
-            tmp->in_fd = mini->fd_pipes[mini->nbr_pipes * 2 - 2];
+            tmp->in_fd = mini->pipe_fd_arr[mini->pipe_count * 2 - 2];
         // For subsequent commands, assign input and output file descriptors based on pipes
         else if (first == FALSE && tmp->next)
         {
             // If input file descriptor is unassigned, connect it to the current pipe
             if (tmp->in_fd == -2)
-                tmp->in_fd = mini->fd_pipes[i];
+                tmp->in_fd = mini->pipe_fd_arr[i];
             // If output file descriptor is marked as -3, connect it to the next pipe
             if (tmp->out_fd == -3)
-                tmp->out_fd = mini->fd_pipes[i + 3];
+                tmp->out_fd = mini->pipe_fd_arr[i + 3];
             i += 2; // Move to the next pair of pipe file descriptors
         }
         tmp = tmp->next; // Move to the next command
     }
 }
 
-int	is_builtin_with_output(char *str)
-{
-	if (ft_strncmp(str, "echo", 5) == 0 || ft_strncmp(str, "pwd", 4) == 0
-		|| ft_strncmp(str, "env", 4) == 0)
-		return (TRUE);
-	return (FALSE);
-}
 
 /*
  *
@@ -1156,30 +1215,7 @@ int	ft_waitpid(pid_t pid)
 	return (130);
 }
 
-/*
- *
- * function checks whether each file descriptor (fd1 and fd2) is greater than 0, indicating that it is a valid file descriptor. 
- * If so, it closes the file descriptor using the close system call and updates the value to -2 or -3, depending on whether it's the first or second file descriptor.
- * The use of these specific values (-2 and -3) after closing the file descriptors might be indicative of some special meaning or state in the context of the program's design.
- * It's common in Unix-like systems to use negative values to represent certain states or flags.
- * 
-*/
-void	ft_close_two_fd(int *fd1, int *fd2)
-{
-	// If fd1 is a valid file descriptor, close it and update to -2
-	if (*fd1 > 0)
-	{
-		close(*fd1);
-		*fd1 = -2;
-	}
 
-	// If fd2 is a valid file descriptor, close it and update to -3
-	if (*fd2 > 0)
-	{
-		close(*fd2);
-		*fd2 = -3;
-	}
-}
 
 /*
  *
@@ -1243,7 +1279,7 @@ void	sig_handl_child(int signal)
  * It assigns the read end of the pipe (fd[0]) to the input file descriptor of the command (node->in_fd), establishing the connection between the heredoc and the command.
  * 
 */
-int	heredoc_function(t_node_cmd *node)
+int	heredoc_function(t_cmd *node)
 {
 	int		fd[2];
 	char	*line;
@@ -1269,7 +1305,7 @@ int	heredoc_function(t_node_cmd *node)
 	return (0);
 }
 
-static int	get_path(t_data *mini, t_node_cmd *node)
+static int	get_path(t_minishell *mini, t_cmd *node)
 {
 	char	*tmp;
 	int		i;
@@ -1283,10 +1319,10 @@ static int	get_path(t_data *mini, t_node_cmd *node)
 		return (FALSE);
 
 	// Iterate through the directories in mini->path
-	while (mini->path && mini->path[i])
+	while (mini->exec_paths && mini->exec_paths[i])
 	{
 		// Construct the full path for the executable
-		tmp = ft_strjoin(mini->path[i++], "/");
+		tmp = ft_strjoin(mini->exec_paths[i++], "/");
 		node->path = ft_strjoin(tmp, node->cmd[0]);
 		free(tmp);
 
@@ -1310,7 +1346,7 @@ static int	get_path(t_data *mini, t_node_cmd *node)
  * This function is a crucial part of command execution, as it replaces the current process image with a new one based on the specified command and arguments.
  * 
 */
-void	ft_execve(t_node_cmd *node, t_data *mini, char **env)
+void	ft_execve(t_cmd *node, t_minishell *mini, char **env)
 {
 	// If the path is not set and cannot be obtained, display an error and exit
 	if (node->path == NULL && get_path(mini, node) == FALSE)
@@ -1330,6 +1366,32 @@ void	ft_execve(t_node_cmd *node, t_data *mini, char **env)
 	}
 }
 
+
+/*
+ * part executor
+ * Executes a built-in command by calling the appropriate function
+ * for the corresponding built-in command (e.g., ft_cd, ft_export, ft_unset, ft_exit).
+*/
+int	ft_execute_builtin(t_minishell *mini, t_cmd *cmd)
+{
+	int	res;
+
+	res = 0;
+	if (cmd->in_fd > 0)
+		close(cmd->in_fd);
+	if (cmd->out_fd > 0)
+		close(cmd->out_fd);
+	if (ft_strncmp(cmd->cmd[0], "cd", 3) == 0)
+		res = ft_cd(mini, cmd);
+	else if (ft_strncmp(cmd->cmd[0], "export", 7) == 0)
+		res = ft_export(mini, cmd);
+	else if (ft_strncmp(cmd->cmd[0], "unset", 6) == 0)
+		res = ft_unset(mini, cmd);
+	else if (ft_strncmp(cmd->cmd[0], "exit", 5) == 0)
+		res = ft_exit(mini, cmd);
+	return (res);
+}
+
 /*
  *
  * function is responsible for executing built-in commands in a child process. 
@@ -1337,7 +1399,7 @@ void	ft_execve(t_node_cmd *node, t_data *mini, char **env)
  * The purpose of forking a child process for built-ins is to isolate their execution and avoid affecting the main shell process.
  * 
 */
-void	ft_execute_fork_builtin(t_data *mini, t_node_cmd *cmd)
+void	ft_execute_fork_builtin(t_minishell *mini, t_cmd *cmd)
 {
 	// Check if the command is "echo"
 	if (ft_strncmp(cmd->cmd[0], "echo", 5) == 0)
@@ -1345,7 +1407,7 @@ void	ft_execute_fork_builtin(t_data *mini, t_node_cmd *cmd)
 	// Check if the command is "pwd"
 	else if (ft_strncmp(cmd->cmd[0], "pwd", 4) == 0)
 		ft_pwd(cmd);
-	// If the command is not "echo" or "pwd", assume it's "env"
+	// it's "env"
 	else
 		ft_env(mini);
 
@@ -1356,7 +1418,7 @@ void	ft_execute_fork_builtin(t_data *mini, t_node_cmd *cmd)
 /*
  * function that handles input and output redirection before executing the command in the child process.
 */
-static int execute_cmd_ext(t_node_cmd *node, int is_builtin)
+static int ft_in_out_handler(t_cmd *node, int is_builtin)
 {
     // If input file descriptor is negative, duplicate standard input
     if (node->in_fd < 0)
@@ -1370,7 +1432,7 @@ static int execute_cmd_ext(t_node_cmd *node, int is_builtin)
     if (node->redir_in && ft_strncmp(node->redir_in, "<<", ft_strlen("<<") + 1) == 0)
         heredoc_function(node);
 
-    // If it's not a builtin command, perform input redirection
+    // If it's not a command  echo, pwd, env, perform input redirection
     if (is_builtin == FALSE)
     {
         if (dup2(node->in_fd, STDIN_FILENO) < 0)
@@ -1378,7 +1440,7 @@ static int execute_cmd_ext(t_node_cmd *node, int is_builtin)
     }
     else
     {
-        // If it's a builtin command, close the input file descriptor
+        // If it's a command  echo, pwd, env,, close the input file descriptor
         if (node->in_fd > 0)
             close(node->in_fd);
     }
@@ -1390,7 +1452,63 @@ static int execute_cmd_ext(t_node_cmd *node, int is_builtin)
     return (0);
 }
 
+
 /*
+ * part executor.exexute_cmd
+ * 
+*/
+/*int	ft_is_builtin_with_output(char *str)
+{
+	if (ft_strncmp(str, "echo", 5) == 0 || ft_strncmp(str, "pwd", 4) == 0
+		|| ft_strncmp(str, "env", 4) == 0)
+		return (TRUE);
+	return (FALSE);
+}*/
+int	ft_is_builtin_with_output(char *str)
+{
+	return (
+        ft_strncmp(str, "echo", 5) == 0 ||
+        ft_strncmp(str, "pwd", 4) == 0 ||
+        ft_strncmp(str, "env", 4) == 0
+        );
+}
+
+/*
+ * part executor
+ * Checks if a given command is one of the built-in commands (e.g., echo, pwd, env, cd, export, unset, exit).
+*/
+/*
+int	ft_is_builtin(char *str)
+{
+	if (ft_strncmp(str, "echo", 5) == 0)
+		return (TRUE);
+	else if (ft_strncmp(str, "pwd", 4) == 0)
+		return (TRUE);
+	else if (ft_strncmp(str, "env", 4) == 0)
+		return (TRUE);
+	else if (ft_strncmp(str, "cd", 3) == 0)
+		return (TRUE);
+	else if (ft_strncmp(str, "export", 7) == 0)
+		return (TRUE);
+	else if (ft_strncmp(str, "unset", 6) == 0)
+		return (TRUE);
+	else if (ft_strncmp(str, "exit", 5) == 0)
+		return (TRUE);
+	return (FALSE);
+}*/
+int	ft_is_builtin(char *str)
+{
+	return (
+        ft_is_builtin_with_output(str) ||
+        ft_strncmp(str, "cd", 3) == 0 ||
+        ft_strncmp(str, "export", 7) == 0 ||
+        ft_strncmp(str, "unset", 6) == 0 ||
+        ft_strncmp(str, "exit", 5) == 0
+        );
+}
+
+/*
+ * part executor
  * function forks a child process using fork() and then executes the command in the child process.
  * signal handler for the SIGINT signal in the child process. This means that when the child process receives the SIGINT signal 
  * (which is typically triggered by pressing Ctrl+C in the terminal), the sig_handl_child function will be called.
@@ -1398,14 +1516,14 @@ static int execute_cmd_ext(t_node_cmd *node, int is_builtin)
  * This means that if the process receives a SIGINT signal (typically sent when the user presses Ctrl+C in the terminal),
  * the default action of terminating the process will be ignored, and the process will continue running.
 */
-int execute_cmd(t_node_cmd *node, t_data *mini, char **env)
+int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
 {
     pid_t pid;
     int is_builtin;
     int exit_status;
 
-    // Check if the command is a builtin command that produces output
-    is_builtin = is_builtin_with_output(node->cmd[0]);
+    // Check if the command is command echo, pwd, env that produces output
+    is_builtin = ft_is_builtin_with_output(node->cmd[0]);
 
     // Fork a child process
     pid = fork();
@@ -1417,10 +1535,10 @@ int execute_cmd(t_node_cmd *node, t_data *mini, char **env)
         signal(SIGINT, sig_handl_child);
 
         // Execute the command in the child process
-        if (execute_cmd_ext(node, is_builtin) != 0)
+        if (ft_in_out_handler(node, is_builtin) != 0)
             return (-1);
 
-        // If it's a builtin command, execute it in the child process
+        // If it's a builtin command echo, pwd, env, execute it in the child process
         if (is_builtin)
             ft_execute_fork_builtin(mini, node);
 
@@ -1444,17 +1562,17 @@ int execute_cmd(t_node_cmd *node, t_data *mini, char **env)
 }
 
 /*
- * This function executes a single command (t_node_cmd) based on whether it is a built-in command or an external command.
- * If it is a built-in command and does not produce output (!is_builtin_with_output(tmp->cmd[0])), it calls ft_execute_builtin to handle the built-in command execution.
+ * This function executes a single command (t_cmd) based on whether it is a built-in command or an external command.
+ * If it is a built-in command and does not produce output (!ft_is_builtin_with_output(tmp->cmd[0])), it calls ft_execute_builtin to handle the built-in command execution.
  * If it is an external command, it calls execute_cmd to execute the command.
  * 
  */
-static void	ft_executor_ext_two(t_data *mini, t_node_cmd *tmp, char **envp)
+static void	ft_exe_ext_or_build(t_minishell *mini, t_cmd *tmp, char **envp)
 {
-	if (ft_is_builtin(tmp->cmd[0]) && !is_builtin_with_output(tmp->cmd[0]))
-		mini->exitstatus = ft_execute_builtin(mini, tmp);
+	if (ft_is_builtin(tmp->cmd[0]) && !ft_is_builtin_with_output(tmp->cmd[0]))
+		mini->exit_status = ft_execute_builtin(mini, tmp);
 	else
-		mini->exitstatus = execute_cmd(tmp, mini, envp);
+		mini->exit_status = execute_cmd(tmp, mini, envp);
 	signal(SIGINT, ft_signal_handler);
 }
 
@@ -1462,22 +1580,22 @@ static void	ft_executor_ext_two(t_data *mini, t_node_cmd *tmp, char **envp)
 /*
  *  This function is responsible for the initial setup before executing commands.
  *  It calls create_pipes to set up pipes for communication between commands. 
- *  If create_pipes fails, it sets mini->exitstatus to 1 and returns -1.
- *  It then calls open_redirs to handle input/output redirections.
+ *  If create_pipes fails, it sets mini->exit_status to 1 and returns -1.
+ *  It then calls ft_redirect_inputs_outputs to handle input/output redirections.
  *  Finally, it calls assign_fds to assign file descriptors for each command in the pipeline.
  *
 */
-static int	ft_executor_ext_one(t_data *mini)
+static int	ft_prep_for_exec(t_minishell *mini)
 {
 	// Create pipes and check for errors
 	if (create_pipes(mini) == -1)
 	{
-		mini->exitstatus = 1;
+		mini->exit_status = 1;
 		return (-1);
 	}
 
 	// Open input/output file descriptors based on redirections
-	open_redirs(mini);
+	ft_redirect_inputs_outputs(mini);
 
 	// Assign file descriptors to commands
 	assign_fds(mini);
@@ -1485,54 +1603,32 @@ static int	ft_executor_ext_one(t_data *mini)
 	return (0);
 }
 
-/*
- *
- * Function closes all the file descriptors associated with pipes in the mini structure
- * The function uses a loop to iterate through the array mini->fd_pipes, which contains file descriptors associated with pipes.
- * For each iteration, it calls the ft_close_two_fd function to close the read and write ends of the pipe. This is done by passing the addresses of the current pair of file descriptors.
- * The loop increments i by 2 in each iteration to move to the next pair of file descriptors in the array.
-*/
-void ft_close_pipes(t_data *mini)
-{
-    int i;
 
-    i = 0;
-
-    // Iterate through the array of pipe-related file descriptors
-    while (i < mini->nbr_pipes * 2)
-    {
-        // Close the read and write ends of the pipe
-        ft_close_two_fd(&mini->fd_pipes[i], &mini->fd_pipes[i + 1]);
-
-        // Move to the next pair of file descriptors
-        i += 2;
-    }
-}
 
 /*
  *	main entry point for executing commands in a shell or command-line interpreter
  *
- *	The function begins by checking if the preparation for execution (setting up pipes and redirections) was successful by calling ft_executor_ext_one. 
+ *	The function begins by checking if the preparation for execution (setting up pipes and redirections) was successful by calling ft_prep_for_exec. 
  *	If not, it returns early.
- * It then iterates through the linked list of command nodes (t_node_cmd). For each node:
+ * It then iterates through the linked list of command nodes (t_cmd). For each node:
  * It checks for conditions where the command execution should be skipped:
  * If the command is empty (!tmp->cmd[0]), or
  * If the command has a valid input file descriptor (tmp->in_fd == -1).
  * If the special case for HEREDOC error with an empty command is detected, it prints an error message using ft_strerror and sets the exit status to 1.
  * It closes the input and output file descriptors using ft_close_two_fd and moves to the next command node.
- * If the conditions are met for executing the command, it calls ft_executor_ext_two to execute the command and handle redirections.
+ * If the conditions are met for executing the command, it calls ft_exe_ext_or_build to execute the command and handle redirections.
  * After processing all command nodes, it closes any remaining pipes using ft_close_pipes.
  */
-void ft_executor(t_data *mini, char **envp)
+void ft_executor(t_minishell *mini, char **envp)
 {
-    t_node_cmd *tmp;
+    t_cmd *tmp;
 
     // Check if preparation for execution (pipes and redirections) was successful
-    if (ft_executor_ext_one(mini) != 0)
+    if (ft_prep_for_exec(mini) != 0)
         return;
 
     // Iterate through the linked list of command nodes
-    tmp = mini->cmds;
+    tmp = mini->cmd_lst;
     while (tmp)
     {
         // Check for conditions where the command execution should be skipped
@@ -1543,7 +1639,7 @@ void ft_executor(t_data *mini, char **envp)
                 && ft_strncmp(tmp->redir_in, "<<", ft_strlen("<<") + 1) == 0)
             {
                 ft_strerror("HEREDOC error", "empty command");
-                mini->exitstatus = 1;
+                mini->exit_status = 1;
             }
 
             // Close file descriptors and move to the next command node
@@ -1553,7 +1649,7 @@ void ft_executor(t_data *mini, char **envp)
         }
 
         // Execute the command and handle redirections
-        ft_executor_ext_two(mini, tmp, envp);
+        ft_exe_ext_or_build(mini, tmp, envp);	// execute builtin without outpu
 
         // Move to the next command node
         tmp = tmp->next;
@@ -1562,6 +1658,16 @@ void ft_executor(t_data *mini, char **envp)
     // Close any remaining pipes
     ft_close_pipes(mini);
 }
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 /*
@@ -1620,7 +1726,7 @@ t_elem	*new_elem(char *content, int len, enum e_token type, enum e_state state)
 }
 
 
-static int	is_empty(t_list_n *list)
+static int	is_empty(t_token *list)
 {
 	return (list->head == NULL);
 }
@@ -1629,7 +1735,7 @@ static int	is_empty(t_list_n *list)
  * mechanism to manage a doubly-linked list (t_list_n). 
  * It updates the tail of the list and adjusts pointers to add a new element to the end of the list. 
  */
-void	add_tail(t_list_n *list, t_elem *new)
+void	add_tail(t_token *list, t_elem *new)
 {
 	if (is_empty(list))
 		list->head = new;
@@ -1643,12 +1749,13 @@ void	add_tail(t_list_n *list, t_elem *new)
 }
 
 /*
+ * make_token
  * handle cases where redirection symbols ('<' or '>') are encountered in the input string.
  * It creates the appropriate tokens based on the type of redirection and updates the index accordingly.
  *  The tokens are added to the linked list for further processing in the lexer.
  *
  */
-int make_token_redir(t_list_n *tokens, char *str, int idx, enum e_state state)
+int make_token_redir(t_token *tokens, char *str, int idx, enum e_state state)
 {
     int i = idx;
 
@@ -1689,12 +1796,13 @@ static int	is_alphanum(int c)
 }
 
 /*
+ * make_token
  * handle the case where an environment variable is encountered in the input string.
  * If the variable is a special variable (like $? or $0, $1, etc.), it increments the index accordingly. 
  * If it's a regular alphanumeric variable, it continues processing until a non-alphanumeric character is found.
  *
 */
-int get_env_token(t_list_n *tokens, char *str, enum e_state state)
+int get_env_token(t_token *tokens, char *str, enum e_state state)
 {
     int i = 1;
 
@@ -1715,12 +1823,13 @@ int get_env_token(t_list_n *tokens, char *str, enum e_state state)
 }
 
 /*
+ * make_token
  * This function handles the state transitions between quotes (') and double quotes (").
  * It checks the current lexer state and decides whether to start, end, or continue a quote state.
  * The function adds a new token to the linked list (tokens) based on the determined state and token type.
  *
 */
-void quotes_state(t_list_n *tokens, char *str, enum e_state *state, int flag)
+void quotes_state(t_token *tokens, char *str, enum e_state *state, int flag)
 {
     enum e_state e_state;
     enum e_token e_type;
@@ -1776,7 +1885,7 @@ static int	in_charset(char c)
  * processes a word in the input string until a non-word character is encountered.
  * It adds a new token to the linked list (tokens) representing the word.
 */
-int get_word(t_list_n *tokens, char *str, enum e_state state)
+int get_word(t_token *tokens, char *str, enum e_state state)
 {
     int i = 0;
 
@@ -1790,11 +1899,12 @@ int get_word(t_list_n *tokens, char *str, enum e_state state)
 }
 
 /*
+ * lexer
  * function effectively drives the tokenization process,
  * handling different cases based on the type of character encountered
  * and updating the linked list of tokens accordingly.
 */
-int ft_make_token(t_list_n *tokens, char *str, int i, enum e_state *state)
+int ft_make_token(t_token *tokens, char *str, int i, enum e_state *state)
 {
     // Check if the current character is part of a word
     if (in_charset(str[i]) != 1)
@@ -1827,20 +1937,28 @@ int ft_make_token(t_list_n *tokens, char *str, int i, enum e_state *state)
     return i;
 }
 
-t_list_n	*init_list(t_list_n *list)
+t_token	*init_list(t_token *list)
 {
-	list = ft_calloc(sizeof(t_list_n), 1);
+	list = ft_calloc(sizeof(t_token), 1);
 	if (!list)
 		return (NULL);
 	return (list);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
+ * from entry point ft_line
  * simple lexer (lexical analyzer) using a linked list data structure to represent tokens. 
  */
-t_list_n *lexer(char *line)
+t_token *lexer(char *line)
 {
-    t_list_n *tokens;    // Linked list to store tokens
+    t_token *tokens;    // Linked list to store tokens
     int i;               // Index for iterating through the input line
     enum e_state state;  // Current state of the lexer (enum e_state)
 
@@ -1858,6 +1976,11 @@ t_list_n *lexer(char *line)
     return (tokens);  // Return the linked list of tokens
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
  *
@@ -1983,13 +2106,19 @@ int	is_redir(enum e_token type)
 		|| type == DREDIR_OUT || type == HERE_DOC);
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
- *
+ * from entry point ft_line
  * iterates through the linked list of tokens (t_elem) using a temporary pointer tmp.
  * For each token, it checks for syntax errors related to pipes, redirections, and quotes.
  * If a syntax error is found, it returns an error message using the ft_perror function.
  */
-int sintax_check(t_list_n *list)
+int sintax_check(t_token *list)
 {
     t_elem *tmp;
 
@@ -2023,6 +2152,12 @@ int sintax_check(t_list_n *list)
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static int	ft_has_characters(char *line)
 {
 	int	i;
@@ -2045,7 +2180,7 @@ static int	ft_has_characters(char *line)
  * The get_pipe_nbr function takes a linked list of elements (t_list_n) and counts the number of pipe tokens (PIPE_LINE) in the list.
  * It iterates through the elements and increments the count 
 */
-static int	get_pipe_nbr(t_list_n *list)
+static int	get_pipe_nbr(t_token *list)
 {
 	int		n;
 	t_elem	*tmp;
@@ -2069,9 +2204,9 @@ static int	get_pipe_nbr(t_list_n *list)
  * If no match is found, it returns an empty string (allocated using ft_calloc).
  * This function is used within the parse_env function to retrieve the value of environment variables when parsing ENV tokens. If the environment variable is found, its value is returned; otherwise, an empty string is returned.
 */
-char *get_env(t_node *env, char *key)
+char *get_env(t_env_var *env, char *key)
 {
-    t_node *current = env;
+    t_env_var *current = env;
 
     while (current)
     {
@@ -2100,19 +2235,19 @@ static void parse_env_ext(int ex_stat, char **args, int *i)
     free(tmp);
 }
 
-void parse_env(t_elem **elem, char **args, int *i, t_data *mini)
+void parse_env(t_elem **elem, char **args, int *i, t_minishell *mini)
 {
     char *tmp;
 
     if (ft_strncmp((*elem)->content, "$?", ft_strlen("$?")) == 0)
     {
         // Special case: $?
-        parse_env_ext(mini->exitstatus, args, i);
+        parse_env_ext(mini->exit_status, args, i);
     }
     else
     {
         // Regular environment variable
-        tmp = get_env(mini->enviro, (*elem)->content + 1);
+        tmp = get_env(mini->env_var_lst, (*elem)->content + 1);
         if (tmp == NULL)
         {
             // If the environment variable is not found, treat it as a regular word
@@ -2186,7 +2321,7 @@ static char	*parse_quot_ext_ext(t_elem **node, char **val, char **line)
  * It checks if the current token is an environment variable (ENV) and if it is within double quotes (IN_DQUOTE). 
  * If so, it retrieves the value of the environment variable and appends it to the line variable.
 */
-static void	parse_quot_ext(t_elem **node, char **val, char **line, t_data *mini)
+static void	parse_quot_ext(t_elem **node, char **val, char **line, t_minishell *mini)
 {
 	char	*tmp;
 
@@ -2194,9 +2329,9 @@ static void	parse_quot_ext(t_elem **node, char **val, char **line, t_data *mini)
 	if ((*node)->type == ENV && (*node)->state == IN_DQUOTE)
 	{
 		if (ft_strncmp((*node)->content, "$?", ft_strlen("$?")) == 0)
-			*val = ft_itoa(mini->exitstatus);
+			*val = ft_itoa(mini->exit_status);
 		else
-			*val = get_env(mini->enviro, (*node)->content + 1);
+			*val = get_env(mini->env_var_lst, (*node)->content + 1);
 		tmp = parse_quot_ext_ext(node, val, line);
 	}
 	else
@@ -2211,7 +2346,7 @@ static void	parse_quot_ext(t_elem **node, char **val, char **line, t_data *mini)
  * It appends the content within the quotes to the line variable and handles special cases where the content inside quotes includes environment variables.
  * The val variable is used to store the value of environment variables if they are present inside the quotes.
 */
-char	*parse_quo(char *line, t_elem **node, enum e_token type, t_data *mini)
+char	*parse_quo(char *line, t_elem **node, enum e_token type, t_minishell *mini)
 {
 	char	*val;
 
@@ -2242,7 +2377,7 @@ char	*parse_quo(char *line, t_elem **node, enum e_token type, t_data *mini)
  * It considers different cases, such as quotes (DOUBLE_QUOTE or QOUTE), environment variables (ENV), and regular words (WORD).
  *
 */
-char	*get_name(t_elem **node, t_data *mini)
+char	*get_name(t_elem **node, t_minishell *mini)
 {
 	char	*tmp;
 
@@ -2251,7 +2386,7 @@ char	*get_name(t_elem **node, t_data *mini)
 		tmp = parse_quo(tmp, node, (*node)->type, mini);
 	else if ((*node)->type == ENV)
 	{
-		tmp = get_env(mini->enviro, (*node)->content + 1);
+		tmp = get_env(mini->env_var_lst, (*node)->content + 1);
 		if (*node)
 			*node = (*node)->next;
 	}
@@ -2266,10 +2401,10 @@ char	*get_name(t_elem **node, t_data *mini)
 
 /*
  *
- * Function checks if a redirection is already set in a t_node_cmd structure and clears the associated data if needed. 
+ * Function checks if a redirection is already set in a t_cmd structure and clears the associated data if needed. 
  * It's called before parsing a new redirection to avoid conflicts.
 */
-void	check_redir(t_node_cmd *new, enum e_token type)
+void	check_redir(t_cmd *new, enum e_token type)
 {
 	if (new->redir_in && (type == REDIR_IN || type == HERE_DOC))
 	{
@@ -2290,10 +2425,10 @@ void	check_redir(t_node_cmd *new, enum e_token type)
 
 /*
  *
- * edirection token (REDIR_IN, REDIR_OUT, DREDIR_OUT, HERE_DOC) and sets the appropriate fields in the t_node_cmd structure.
+ * edirection token (REDIR_IN, REDIR_OUT, DREDIR_OUT, HERE_DOC) and sets the appropriate fields in the t_cmd structure.
  * It also retrieves the associated name using the get_name function.
 */
-void	parse_redir(t_elem **node, t_data *mini, t_node_cmd	*new)
+void	parse_redir(t_elem **node, t_minishell *mini, t_cmd	*new)
 {
 	enum e_token	type;
 	char			*tmp;
@@ -2316,16 +2451,16 @@ void	parse_redir(t_elem **node, t_data *mini, t_node_cmd	*new)
 
 /*
  *
- * function initializes a new t_node_cmd structure. The parameters are the size of the command (number of arguments) and
+ * function initializes a new t_cmd structure. The parameters are the size of the command (number of arguments) and
  * a pointer i that will be used to keep track of the current index while populating the cmd array.
  * The function allocates memory for the structure and its arrays (cmd) and initializes various fields.
 */
-t_node_cmd	*new_cmd_node_init(int size, int *i)
+t_cmd	*new_cmd_node_init(int size, int *i)
 {
-	t_node_cmd	*new;
+	t_cmd	*new;
 
 	*i = 0;
-	new = ft_calloc(sizeof(t_node_cmd), 1);
+	new = ft_calloc(sizeof(t_cmd), 1);
 	if (new == NULL)
 		return (NULL);
 	new->path = NULL;
@@ -2348,12 +2483,12 @@ t_node_cmd	*new_cmd_node_init(int size, int *i)
  * iterates through the input list, parsing tokens based on their types. 
  * It handles different token types, such as WORD, ENV, WHITE_SPACE, DOUBLE_QUOTE, QOUTE, and redirection tokens 
 */
-t_node_cmd *new_cmd_node(t_elem **list, int size, t_data *mini)
+t_cmd *new_cmd_node(t_elem **list, int size, t_minishell *mini)
 {
-    t_node_cmd *new;
+    t_cmd *new;
     int i;
 
-    // Initialize a new t_node_cmd structure
+    // Initialize a new t_cmd structure
     new = new_cmd_node_init(size, &i);
     if (new == NULL)
         return (NULL);
@@ -2441,12 +2576,12 @@ int	count_args(t_elem *elem)
 
 /*
  *
- * or building a linked list of t_node_cmd nodes, where each node represents a command in the execution sequence of a shell.
+ * or building a linked list of t_cmd nodes, where each node represents a command in the execution sequence of a shell.
  * The linked list is extended as new commands are encountered.
 */
-static void ft_add_cmd_end(t_node_cmd **head, t_node_cmd *new)
+static void ft_add_cmd_end(t_cmd **head, t_cmd *new)
 {
-    t_node_cmd *current;
+    t_cmd *current;
 
     // If the linked list is empty, set the new node as the head
     if (*head == NULL)
@@ -2465,15 +2600,15 @@ static void ft_add_cmd_end(t_node_cmd **head, t_node_cmd *new)
 }
 
 /*
- *
- * function takes a linked list of elements (t_list_n) and a data structure (t_data *mini) as parameters.
- * It iterates through the elements of the linked list, counts the number of arguments in each command, creates a new command node (t_node_cmd),
+ * ft_line
+ * function takes a linked list of elements (t_list_n) and a data structure (t_minishell *mini) as parameters.
+ * It iterates through the elements of the linked list, counts the number of arguments in each command, creates a new command node (t_cmd),
  * and adds it to the list of commands. Finally, it returns the list of parsed commands.
 */
-static	t_node_cmd *parsing(t_list_n *list, t_data *mini)
+static	t_cmd *parsing(t_token *list, t_minishell *mini)
 {
-	t_node_cmd	*commands;
-	t_node_cmd	*new;
+	t_cmd	*commands;
+	t_cmd	*new;
 	t_elem		*tmp;
 	int			size;
 
@@ -2508,17 +2643,17 @@ int is_full(char *str)
 
 /*
  *
- * The function takes a pointer to the head of the linked list (head), which consists of t_node_cmd nodes.
+ * The function takes a pointer to the head of the linked list (head), which consists of t_cmd nodes.
  * It initializes a pointer (current) to traverse the linked list, starting from the head.
  * Inside the loop, for each node, it checks if the command's path is already an absolute path using the is_full function (which is assumed to return a boolean value).
  * If the command's path is an absolute path, it allocates memory for the path attribute of the node and copies the absolute path using ft_strdup.
  * The return statement is used to exit the function after setting the path for the first node with an absolute path. Assuming that only one absolute path command is expected, this prevents unnecessary iterations.
 */
-static void abs_path_check(t_node_cmd **head)
+static void abs_path_check(t_cmd **head)
 {
-    t_node_cmd *current;
+    t_cmd *current;
 
-    // Traverse the linked list of t_node_cmd nodes
+    // Traverse the linked list of t_cmd nodes
     current = *head;
     while (current)
     {
@@ -2536,6 +2671,7 @@ static void abs_path_check(t_node_cmd **head)
 }
 
 /*
+ * entry point for lex analyzer
  * handle the processing of a user input line in a shell-like program,
  * including reading input, checking syntax, and preparing data structures 
  * 
@@ -2543,13 +2679,13 @@ static void abs_path_check(t_node_cmd **head)
  * readline(mini->prompt): This function reads a line of input from the user and displays the provided prompt.
  * It returns a dynamically allocated string containing the user's input.
  */
-int ft_line(t_data *mini)
+int ft_line(t_minishell *mini)
 {
     // Read a line of input and assign it to mini->line
-    mini->line = readline(mini->prompt);
+    mini->input_line = readline(mini->prompt);
 
     // Check if the input line is NULL (e.g., when the user presses Ctrl+D for EOF)
-    if (mini->line == NULL)
+    if (mini->input_line == NULL)
     {
         // Clean up resources and exit the program
         ft_cleaning(mini);
@@ -2558,40 +2694,44 @@ int ft_line(t_data *mini)
     }
 
     // Check if the input line is empty or contains only whitespaces
-    if (ft_strlen(mini->line) == 0 || ft_has_characters(mini->line) == 0)
+    if (ft_strlen(mini->input_line) == 0 || ft_has_characters(mini->input_line) == 0)
         return (1);
 
     // Add the input line to the history Place STRING at the end of the history list. The associated data field (if any) is set to NULL.
-    add_history(mini->line);  // from history.h
+    add_history(mini->input_line);  // from history.h
 
     // Tokenize the input line into a linked list of tokens (mini->lex)
-    mini->lex = lexer(mini->line);
+    mini->token_lst = lexer(mini->input_line);
 
     // Check the syntax of the input line
-    if (sintax_check(mini->lex))
+    if (sintax_check(mini->token_lst))
     {
-        mini->exitstatus = 1;
+        mini->exit_status = 1;
         return (1);
     }
 
     // Count the number of pipes and commands in the input line
-    mini->nbr_pipes = get_pipe_nbr(mini->lex);
-    mini->nbrofcom = mini->nbr_pipes + 1;
+    mini->pipe_count = get_pipe_nbr(mini->token_lst);
+    mini->cmd_count = mini->pipe_count + 1;
 
     // Parse the input line into a linked list of commands (mini->cmds)
-    mini->cmds = parsing(mini->lex, mini);
+    mini->cmd_lst = parsing(mini->token_lst, mini);
 
     // Check for absolute paths in the commands
-    return (abs_path_check(&mini->cmds), 0);
+    return (abs_path_check(&mini->cmd_lst), 0);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
  * This function essentially converts an array of environment variables into a linked list 
 */
-t_node *create_env_list(char **env)
+t_env_var *create_env_list(char **env)
 {
-    t_node *head;
+    t_env_var *head;
     int i;
 
     i = 0;
@@ -2612,20 +2752,20 @@ t_node *create_env_list(char **env)
 /*
  * getenv("USER"): This function is used to retrieve the value of the environment variable with the name "USER." It returns a pointer to the value as a string.
 */
-void ft_data_init(t_data *mini, char **envp)
+void ft_minishell_init(t_minishell *mini, char **envp)
 {
     char	*tmp;
 
-    // Initialize various fields of the t_data structure
-    mini->line = NULL;
-    mini->cmds = NULL;
-    mini->nbrofcom = 0;
-    mini->nbr_pipes = 0;
-    mini->fd_pipes = NULL;
-    mini->lex = NULL;
+    // Initialize various fields of the t_minishell structure
+    mini->input_line = NULL;
+    mini->cmd_lst = NULL;
+    mini->cmd_count = 0;
+    mini->pipe_count = 0;
+    mini->pipe_fd_arr = NULL;
+    mini->token_lst = NULL;
 
     // Create a linked list representing environment variables
-    mini->enviro = create_env_list(envp);
+    mini->env_var_lst = create_env_list(envp);
 
     // Set up the shell prompt
     tmp = getenv("USER");
@@ -2634,57 +2774,57 @@ void ft_data_init(t_data *mini, char **envp)
     else
         mini->prompt = ft_strjoin("beautiful", ".minishell ~> ");
 
-    // Initialize exit status and old_cwd
-    mini->exitstatus = 0;
+    // Initialize exit status and prev_cwd
+    mini->exit_status = 0;
     tmp = getenv("PWD");
     if (tmp != NULL)
-        mini->old_cwd = ft_strdup(tmp);
+        mini->prev_cwd = ft_strdup(tmp);
     else
-        mini->old_cwd = ft_strdup(getenv("HOME"));
+        mini->prev_cwd = ft_strdup(getenv("HOME"));
 
     // Initialize the home directory path
-    mini->home = ft_strdup(getenv("HOME"));
+    mini->home_dir = ft_strdup(getenv("HOME"));
 
     // Fill the path array with executable search paths
-    ft_path_filler(mini);
+    ft_update_path(mini);
 }
 
 
 /*
  *
- * The function begins by checking if the mini->cmds field (presumably representing a list of commands) is not NULL. If it's not NULL, the remove_cmd_list function is called to free the memory associated with the command list.
+ * The function begins by checking if the mini->cmd_lst field (presumably representing a list of commands) is not NULL. If it's not NULL, the remove_cmd_list function is called to free the memory associated with the command list.
  * Similarly, the function checks if the mini->lex field (presumably representing a linked list of lexemes) is not NULL. If it's not NULL, the free_list function is called to free the memory associated with the lexeme list.
- * The function then resets the fields mini->nbrofcom and mini->nbr_pipes to zero, indicating no commands and no pipes.
- * The function checks if the mini->fd_pipes field (presumably representing an array of file descriptors for pipes) is not NULL. If it's not NULL, the free function is called to free the memory associated with the array.
+ * The function then resets the fields mini->cmd_count and mini->pipe_count to zero, indicating no commands and no pipes.
+ * The function checks if the mini->pipe_fd_arr field (presumably representing an array of file descriptors for pipes) is not NULL. If it's not NULL, the free function is called to free the memory associated with the array.
  * The function checks if the mini->line field (presumably representing an input line) is not NULL. If it's not NULL, the free function is called to free the memory associated with the input line.
- * Finally, the function resets the pointers mini->fd_pipes, mini->lex, and mini->cmds to NULL, indicating that these structures are now empty or uninitialized.
+ * Finally, the function resets the pointers mini->pipe_fd_arr, mini->lex, and mini->cmds to NULL, indicating that these structures are now empty or uninitialized.
 */
-void ft_reset_values(t_data *mini)
+void ft_reset_values(t_minishell *mini)
 {
     // Remove the command list
-    if (mini->cmds)
-        remove_cmd_list(&mini->cmds);
+    if (mini->cmd_lst)
+        remove_cmd_list(&mini->cmd_lst);
 
     // Free the linked list representing the lexemes
-    if (mini->lex)
-        free_list(mini->lex);
+    if (mini->token_lst)
+        free_list(mini->token_lst);
 
     // Reset the number of commands and number of pipes
-    mini->nbrofcom = 0;
-    mini->nbr_pipes = 0;
+    mini->cmd_count = 0;
+    mini->pipe_count = 0;
 
     // Free the array storing file descriptors for pipes
-    if (mini->fd_pipes)
-        free(mini->fd_pipes);
+    if (mini->pipe_fd_arr)
+        free(mini->pipe_fd_arr);
 
     // Free the allocated memory for the input line
-    if (mini->line)
-        free(mini->line);
+    if (mini->input_line)
+        free(mini->input_line);
 
     // Reset pointers to NULL
-    mini->fd_pipes = NULL;
-    mini->lex = NULL;
-    mini->cmds = NULL;
+    mini->pipe_fd_arr = NULL;
+    mini->token_lst = NULL;
+    mini->cmd_lst = NULL;
 }
 
 /*
@@ -2701,13 +2841,13 @@ void ft_reset_values(t_data *mini)
 int	main(void)
 {
 	extern char	**environ;
-	t_data		mini;
+	t_minishell		mini;
 	/*
 	
 	*/
 	signal(SIGINT, ft_signal_handler);
 	signal(SIGQUIT, SIG_IGN);
-	ft_data_init(&mini, environ);
+	ft_minishell_init(&mini, environ);
 	while (1)
 	{
 		if (ft_line(&mini) == 0)
@@ -2716,4 +2856,5 @@ int	main(void)
 	}
 	return (0);
 }
+
 
