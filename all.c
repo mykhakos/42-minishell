@@ -310,7 +310,7 @@ void	ft_cleaning(t_minishell *mini)
 }
 
 /*
- * function effectively 
+ * function 
  * extracts the key part of an environment variable string by copying characters until the equals sign.
  * It then returns a dynamically allocated string containing the key.
  */
@@ -860,7 +860,8 @@ void ft_update_path(t_minishell *mini)
 }
 
 /*
- *  Handles the export command, adding or updating environment variables.
+ * executor.execute_builtin
+ * Handles the export command, adding or updating environment variables.
  *  Calls ex_command_tester to validate the command.
  *  If the command is valid, either updates an existing environment variable or adds a new one.
  *  Cleans the mini->path array, then refills it with the updated environment variables.
@@ -892,6 +893,7 @@ int	ft_export(t_minishell *mini, t_cmd *cmd)
 }
 
 /*
+ * executor.execute_builtin
  * Removes an environment variable specified in the command.
  * Calls ft_remove_node to remove the corresponding node from the linked list.
  * Clears the mini->path array and refills it with the updated environment variables.
@@ -926,6 +928,7 @@ int	ft_unset(t_minishell *mini, t_cmd *cmd)
 }
 
 /*
+ *  executor.execute_builtin
  *  Exits the shell with the specified exit code.
  *  If an argument is provided, it is interpreted as the exit code. If no argument is provided, the exit code is 0.
  *  Prints an error message if the argument is not a numeric value.
@@ -1239,7 +1242,7 @@ void	exit_on_interrupt(int signal)
 
 
 /*
- *
+ * executor.exexute_cmd.in_out_handler
  * function designed to handle a here document (heredoc) in the context of command execution. 
  * A heredoc allows input to be provided directly within the script or command, typically terminated by a specific delimiter. 
  * The function sets up a pipe, reads lines from the user, writes them to the write end of the pipe, and redirects the read end 
@@ -1280,6 +1283,10 @@ int	heredoc_function(t_cmd *node)
 	return (0);
 }
 
+
+/*
+ * executor.execute_cmd.execve
+*/
 static int	check_path(t_minishell *mini, t_cmd *node)
 {
 	char	*tmp;
@@ -1316,7 +1323,7 @@ static int	check_path(t_minishell *mini, t_cmd *node)
 }
 
 /*
- *
+ * executor.execute_cmd
  * function is responsible for executing a command using the execve system call.
  * This function is a crucial part of command execution, as it replaces the current process image with a new one based on the specified command and arguments.
  * 
@@ -1368,7 +1375,7 @@ int	ft_execute_builtin(t_minishell *mini, t_cmd *cmd)
 }
 
 /*
- *
+ * executor.exexute_cmd
  * function is responsible for executing built-in commands in a child process. 
  * It checks the command name and calls the corresponding built-in function.
  * The purpose of forking a child process for built-ins is to isolate their execution and avoid affecting the main shell process.
@@ -1391,6 +1398,7 @@ void	ft_execute_fork_builtin(t_minishell *mini, t_cmd *cmd)
 }
 
 /*
+ * executor.exexute_cmd
  * function that handles input and output redirection before executing the command in the child process.
 */
 static int ft_in_out_handler(t_cmd *node, int is_builtin_out)
@@ -1484,7 +1492,7 @@ int	ft_is_builtin(char *str)
 
 
 /*
- *
+ * executor.exexute_cmd
  * The waitpid system call is used to wait for a specific child process (pid) to terminate. 
  * The exit status of the process is stored in the status variable.
  * The macro WIFEXITED(status) checks whether the child process terminated normally (exited). 
