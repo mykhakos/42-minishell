@@ -310,92 +310,6 @@ void	ft_cleaning(t_minishell *mini)
 }
 
 /*
- * function
- * extracts the key part of an environment variable string by copying characters until the equals sign.
- * It then returns a dynamically allocated string containing the key.
- */
-char *ft_separate_key(char *env)
-{
-    int i;
-    char *key;
-
-    // Check if the input is NULL
-    if (!env)
-        return (NULL);
-
-    // Find the index of the equals sign ('=')
-    i = 0;
-    while (env[i] != '=')
-        i++;
-
-    // Allocate memory for the key
-    key = ft_calloc(sizeof(char), (i + 1));
-    if (key == NULL)
-        return (NULL);
-
-    // Copy the characters until the equals sign to the key
-    i = 0;
-    while (env[i] != '=')
-    {
-        key[i] = env[i];
-        i++;
-    }
-
-    // Null-terminate the key
-    key[i] = '\0';
-
-    return (key);
-}
-
-/*
- * function extracts the value part of an environment variable string 
- * by copying characters from the position following the equals sign until the end of the string. 
- * 
-*/
-char *ft_separate_value(char *env)
-{
-    int i;
-    int y;
-    char *value;
-
-    // Check if the input is NULL
-    if (!env)
-        return (NULL);
-
-    // Find the index of the equals sign ('=')
-    i = 0;
-    while (env[i] != '=')
-        i++;
-
-    // Increment i to move to the character following the equals sign
-    i++;
-
-    // Find the total length of the remaining string
-    y = i;
-    while (env[y])
-        y++;
-
-    // Allocate memory for the value
-    value = ft_calloc(sizeof(char), ((y - i) + 1));
-    if (!value)
-        return (NULL);
-
-    // Copy the characters from the input string to the value
-    y = 0;
-    while (env[i])
-    {
-        value[y] = env[i];
-        i++;
-        y++;
-    }
-
-    // Null-terminate the value
-    value[y] = '\0';
-
-    return (value);
-}
-
-/*
  * Checks if a given string represents a numeric value.
 */
 int	ft_isnum(char *arg)
@@ -686,7 +600,94 @@ int	ft_cd(t_minishell *mini, t_cmd *cmd)
 }
 
 /*
- *   part export
+ * export
+ * function extracts the value part of an environment variable string 
+ * by copying characters from the position following the equals sign until the end of the string. 
+ * 
+*/
+char *ft_separate_value(char *env)
+{
+    int i;
+    int y;
+    char *value;
+
+    // Check if the input is NULL
+    if (!env)
+        return (NULL);
+
+    // Find the index of the equals sign ('=')
+    i = 0;
+    while (env[i] != '=')
+        i++;
+
+    // Increment i to move to the character following the equals sign
+    i++;
+
+    // Find the total length of the remaining string
+    y = i;
+    while (env[y])
+        y++;
+
+    // Allocate memory for the value
+    value = ft_calloc(sizeof(char), ((y - i) + 1));
+    if (!value)
+        return (NULL);
+
+    // Copy the characters from the input string to the value
+    y = 0;
+    while (env[i])
+    {
+        value[y] = env[i];
+        i++;
+        y++;
+    }
+
+    // Null-terminate the value
+    value[y] = '\0';
+
+    return (value);
+}
+
+/*
+ * export
+ * extracts the key part of an environment variable string by copying characters until the equals sign.
+ * It then returns a dynamically allocated string containing the key.
+ */
+char *ft_separate_key(char *env)
+{
+    int i;
+    char *key;
+
+    // Check if the input is NULL
+    if (!env)
+        return (NULL);
+
+    // Find the index of the equals sign ('=')
+    i = 0;
+    while (env[i] != '=')
+        i++;
+
+    // Allocate memory for the key
+    key = ft_calloc(sizeof(char), (i + 1));
+    if (key == NULL)
+        return (NULL);
+
+    // Copy the characters until the equals sign to the key
+    i = 0;
+    while (env[i] != '=')
+    {
+        key[i] = env[i];
+        i++;
+    }
+
+    // Null-terminate the key
+    key[i] = '\0';
+
+    return (key);
+}
+
+/*
+ *   export
  *   Checks if an environment variable specified in cmd->cmd[1] exists in the linked list.
  *   If it exists, replaces the current value with the new one obtained from cmd->cmd[1].
  *   Returns TRUE if the replacement is successful, otherwise returns FALSE.
@@ -970,7 +971,7 @@ int	ft_exit(t_minishell *mini, t_cmd *cmd)
 
 
 /*
- *
+ * executor...
  * function checks whether each file descriptor (fd1 and fd2) is greater than 0, indicating that it is a valid file descriptor. 
  * If so, it closes the file descriptor using the close system call and updates the value to -2 or -3, depending on whether it's the first or second file descriptor.
  * The use of these specific values (-2 and -3) after closing the file descriptors might be indicative of some special meaning or state in the context of the program's design.
@@ -995,55 +996,7 @@ void	ft_close_two_fd(int *fd1, int *fd2)
 }
 
 /*
- * part executor
- * Function closes all the file descriptors associated with pipes in the mini structure
- * The function uses a loop to iterate through the array mini->pipe_fd_arr, which contains file descriptors associated with pipes.
- * For each iteration, it calls the ft_close_two_fd function to close the read and write ends of the pipe. This is done by passing the addresses of the current pair of file descriptors.
- * The loop increments i by 2 in each iteration to move to the next pair of file descriptors in the array.
-*/
-void ft_close_pipes(t_minishell *mini)
-{
-    int i;
-
-    i = 0;
-
-    // Iterate through the array of pipe-related file descriptors
-    while (i < mini->pipe_count * 2)
-    {
-        // Close the read and write ends of the pipe
-        ft_close_two_fd(&mini->pipe_fd_arr[i], &mini->pipe_fd_arr[i + 1]);
-
-        // Move to the next pair of file descriptors
-        i += 2;
-    }
-}
-
-/*
- * part executor
- * function is responsible for creating pipes needed for inter-process communication between commands.
- * It allocates an array of file descriptors (mini->pipe_fd_arr) and initializes them using the pipe system call.
- * checks if there is more than one command (mini->cmd_count > 1) and dynamically allocates space for the array of file descriptors.
- *  It then uses a loop to create pipes using the pipe system call, updating the array of file descriptors accordingly.
- *
-*/
-int	create_pipes(t_minishell	*mini)
-{
-	int	i;
-
-	i = 0;
-	if (mini->cmd_count > 1)
-		mini->pipe_fd_arr = (int *)malloc(sizeof(int) * mini->pipe_count * 2);
-	while (i < mini->pipe_count * 2)
-	{
-		if (pipe(mini->pipe_fd_arr + i) == -1) // from unistd.h
-			return (ft_strerror("Pipes creating", "error"), -1);
-		i += 2;
-	}
-	return (0);
-}
-
-/*
- * part open redirs
+ * executor.open redirs
  * If the in_redir field of the command is not NULL and its value is "<<", it duplicates the standard input file descriptor 
  *(STDIN_FILENO) using the dup system call. 
  * This is often used for here documents or here strings, where the input is provided directly in the command.
@@ -1078,7 +1031,7 @@ static void open_infile(t_cmd *node, int *exit_st)
 }
 
 /*
- * part open redirs
+ * executor.open redirs
  * function is responsible for handling the output file redirection for a given command (t_cmd).
  * It checks the type of output redirection specified in the command (node->out_redir) and performs the necessary actions 
  * to set up the output file descriptor (node->out_fd).
@@ -1109,106 +1062,12 @@ static void open_outfile(t_cmd *node, int *exit_st)
     }
 }
 
-/*
- * part executor
- * The ft_redirect_inputs_outputs function is responsible for iterating over the commands in the mini data structure 
- * and performing the necessary setup for input and output redirection for each command by calling
- * the open_outfile and open_infile functions.
-*/
-void ft_redirect_inputs_outputs(t_minishell *mini)
-{
-    t_cmd *tmp;
-
-    // Iterate over the commands in the mini data structure
-    tmp = mini->cmd_lst;
-    while (tmp)
-    {
-        // Handle output file redirection
-        open_outfile(tmp, &mini->exit_status);
-
-        // Handle input file redirection
-        open_infile(tmp, &mini->exit_status);
-
-        // Move to the next command
-        tmp = tmp->next;
-    }
-}
-
-/*
- * This function is an extension of the assign_fds function and is called when handling the first command in the pipeline (first == TRUE).
- * 
- */
-static void assign_fds_ext(t_minishell *mini, t_cmd *tmp, int *flag)
-{
-    if (tmp->out_fd == -3)
-    {
-        // Output should be connected to a pipe
-        tmp->out_fd = mini->pipe_fd_arr[1]; 	// assigns mini->pipe_fd_arr[1] (write end of the pipe) to tmp->out_fd.
-    }
-    else
-    {
-        // Output is redirected elsewhere, close the write end of the pipe
-        close(mini->pipe_fd_arr[1]); 
-        mini->pipe_fd_arr[1] = -2; // Indicate that the pipe is not needed
-    }
-
-    *flag = FALSE;
-}
-
-/*
- * part executor
- * This function assigns file descriptors (in_fd and out_fd) for each command in the pipeline.
- * It iterates through the linked list of command nodes (t_cmd).
- * For the first command (first == TRUE), it calls assign_fds_ext.
- * For subsequent commands (first == FALSE), it assigns file descriptors based on whether input/output redirections are specified. 
- * It also updates the indices for mini->pipe_fd_arr.
- * If a command is the last in the pipeline (tmp->next == NULL), and the input file descriptor is set to -2, 
- * it means the input should come from a pipe. In this case, it sets tmp->in_fd to mini->pipe_fd_arr[mini->pipe_count * 2 - 2].
- * The expression pipe_fd_arr[mini->pipe_count * 2 - 2] is indexing the array pipe_fd_arr to obtain the file descriptor corresponding to the last pipe.
- * mini->pipe_count: This is the number of pipes needed for the commands. Each pipe requires two file descriptors (one for reading, one for writing).
- * mini->pipe_count * 2: This calculates the total number of file descriptors needed for all the pipes.
- * mini->pipe_count * 2 - 2: Subtracting 2 gives the index of the last file descriptor in the array, as array indices are 0-based.
- * So, pipe_fd_arr[mini->pipe_count * 2 - 2] retrieves the file descriptor for the last pipe's read end. This file descriptor is used to connect the input of the last command to the output of the second-to-last command, effectively chaining the commands together through pipes.
-*/
-static void assign_fds(t_minishell *mini)
-{
-    t_cmd *tmp;
-    int first;
-    int i;
-
-    i = 0;
-    tmp = mini->cmd_lst;
-    first = TRUE;
-
-    while (tmp)
-    {
-        // For the first command with a next command, handle output file descriptor
-	if (first == TRUE && tmp->next)
-            assign_fds_ext(mini, tmp, &first);
-        // For the last command, if input file descriptor is unassigned, connect it to the last pipe
-		else if (first == FALSE && tmp->next == NULL && tmp->in_fd == -2)
-            tmp->in_fd = mini->pipe_fd_arr[mini->pipe_count * 2 - 2];
-        // For subsequent commands, assign input and output file descriptors based on pipes
-        else if (first == FALSE && tmp->next)
-        {
-            // If input file descriptor is unassigned, connect it to the current pipe
-            if (tmp->in_fd == -2)
-                tmp->in_fd = mini->pipe_fd_arr[i];
-            // If output file descriptor is marked as -3, connect it to the next pipe
-            if (tmp->out_fd == -3)
-                tmp->out_fd = mini->pipe_fd_arr[i + 3];
-            i += 2; // Move to the next pair of pipe file descriptors
-        }
-        tmp = tmp->next; // Move to the next command
-    }
-}
-
-
 
 
 
 /*
- *
+ * main  or
+ * executor.ext_or_build.execute_cmd
  * function is a signal handler for the SIGINT (interrupt) signal. 
  * It is designed to handle the SIGINT signal, which is typically sent to a process when the user presses Ctrl+C in the terminal.
  * Writes a newline character ("\n") to the standard output (file descriptor 1). This effectively moves the cursor to a new line in the terminal.
@@ -1236,7 +1095,7 @@ void clear_input_on_interrupt(int signal)
 }
 
 /*
- * 
+ * executor.ext_or_build.execute_cmd
  * signal handler for the SIGINT signal in the child process. When the child process receives the SIGINT signal 
  * (usually when the user presses Ctrl+C in the terminal), this handler function will be called
  * In Unix-like systems, a process can exit with a specific status code. Conventionally,
@@ -1252,7 +1111,10 @@ void	exit_on_interrupt(int signal)
 	}
 }
 
-
+/*
+*
+* executor.ext_or_build.execute_cmd.execve
+*/
 static int	check_path(t_minishell *mini, t_cmd *node)
 {
 	char	*tmp;
@@ -1289,7 +1151,7 @@ static int	check_path(t_minishell *mini, t_cmd *node)
 }
 
 /*
- *
+ * executor.ext_or_build.execute_cmd
  * function is responsible for executing a command using the execve system call.
  * This function is a crucial part of command execution, as it replaces the current process image with a new one based on the specified command and arguments.
  * 
@@ -1314,54 +1176,6 @@ void	ft_execve(t_cmd *node, t_minishell *mini, char **env)
 	}
 }
 
-
-/*
- * part executor
- * Executes a built-in command by calling the appropriate function
- * for the corresponding built-in command (e.g., ft_cd, ft_export, ft_unset, ft_exit).
-*/
-int	ft_execute_builtin(t_minishell *mini, t_cmd *cmd)
-{
-	int	res;
-
-	res = 0;
-	if (cmd->in_fd > 0)
-		close(cmd->in_fd);
-	if (cmd->out_fd > 0)
-		close(cmd->out_fd);
-	if (ft_strncmp(cmd->cmd_args[0], "cd", 3) == 0)
-		res = ft_cd(mini, cmd);
-	else if (ft_strncmp(cmd->cmd_args[0], "export", 7) == 0)
-		res = ft_export(mini, cmd);
-	else if (ft_strncmp(cmd->cmd_args[0], "unset", 6) == 0)
-		res = ft_unset(mini, cmd);
-	else if (ft_strncmp(cmd->cmd_args[0], "exit", 5) == 0)
-		res = ft_exit(mini, cmd);
-	return (res);
-}
-
-/*
- * executor.execute_cmd
- * function is responsible for executing built-in commands in a child process. 
- * It checks the command name and calls the corresponding built-in function.
- * The purpose of forking a child process for built-ins is to isolate their execution and avoid affecting the main shell process.
- * 
-*/
-void	ft_execute_fork_builtin(t_minishell *mini, t_cmd *cmd)
-{
-	// Check if the command is "echo"
-	if (ft_strncmp(cmd->cmd_args[0], "echo", 5) == 0)
-		ft_echo(cmd);
-	// Check if the command is "pwd"
-	else if (ft_strncmp(cmd->cmd_args[0], "pwd", 4) == 0)
-		ft_pwd(cmd);
-	// it's "env"
-	else
-		ft_env(mini);
-
-	// Exit the child process with status 0
-	exit(0);
-}
 
 /*
  *
@@ -1501,7 +1315,7 @@ int	ft_is_builtin(char *str)
 
 
 /*
- *
+ * executor.ext_or_build.execute_cmd
  * The waitpid system call is used to wait for a specific child process (pid) to terminate. 
  * The exit status of the process is stored in the status variable.
  * The macro WIFEXITED(status) checks whether the child process terminated normally (exited). 
@@ -1527,7 +1341,198 @@ int	ft_waitpid(pid_t pid)
 }
 
 /*
- * part executor
+ * executor.prep_for_exec
+ * This function is an extension of the assign_fds function and is called when handling the first command in the pipeline (first == TRUE).
+ * 
+ */
+static void assign_fds_ext(t_minishell *mini, t_cmd *tmp, int *flag)
+{
+    if (tmp->out_fd == -3)
+    {
+        // Output should be connected to a pipe
+        tmp->out_fd = mini->pipe_fd_arr[1]; 	// assigns mini->pipe_fd_arr[1] (write end of the pipe) to tmp->out_fd.
+    }
+    else
+    {
+        // Output is redirected elsewhere, close the write end of the pipe
+        close(mini->pipe_fd_arr[1]); 
+        mini->pipe_fd_arr[1] = -2; // Indicate that the pipe is not needed
+    }
+
+    *flag = FALSE;
+}
+
+/*
+ * executor.prep_for_exec
+ * This function assigns file descriptors (in_fd and out_fd) for each command in the pipeline.
+ * It iterates through the linked list of command nodes (t_cmd).
+ * For the first command (first == TRUE), it calls assign_fds_ext.
+ * For subsequent commands (first == FALSE), it assigns file descriptors based on whether input/output redirections are specified. 
+ * It also updates the indices for mini->pipe_fd_arr.
+ * If a command is the last in the pipeline (tmp->next == NULL), and the input file descriptor is set to -2, 
+ * it means the input should come from a pipe. In this case, it sets tmp->in_fd to mini->pipe_fd_arr[mini->pipe_count * 2 - 2].
+ * The expression pipe_fd_arr[mini->pipe_count * 2 - 2] is indexing the array pipe_fd_arr to obtain the file descriptor corresponding to the last pipe.
+ * mini->pipe_count: This is the number of pipes needed for the commands. Each pipe requires two file descriptors (one for reading, one for writing).
+ * mini->pipe_count * 2: This calculates the total number of file descriptors needed for all the pipes.
+ * mini->pipe_count * 2 - 2: Subtracting 2 gives the index of the last file descriptor in the array, as array indices are 0-based.
+ * So, pipe_fd_arr[mini->pipe_count * 2 - 2] retrieves the file descriptor for the last pipe's read end. This file descriptor is used to connect the input of the last command to the output of the second-to-last command, effectively chaining the commands together through pipes.
+*/
+static void assign_fds(t_minishell *mini)
+{
+    t_cmd *tmp;
+    int first;
+    int i;
+
+    i = 0;
+    tmp = mini->cmd_lst;
+    first = TRUE;
+
+    while (tmp)
+    {
+        // For the first command with a next command, handle output file descriptor
+	if (first == TRUE && tmp->next)
+            assign_fds_ext(mini, tmp, &first);
+        // For the last command, if input file descriptor is unassigned, connect it to the last pipe
+		else if (first == FALSE && tmp->next == NULL && tmp->in_fd == -2)
+            tmp->in_fd = mini->pipe_fd_arr[mini->pipe_count * 2 - 2];
+        // For subsequent commands, assign input and output file descriptors based on pipes
+        else if (first == FALSE && tmp->next)
+        {
+            // If input file descriptor is unassigned, connect it to the current pipe
+            if (tmp->in_fd == -2)
+                tmp->in_fd = mini->pipe_fd_arr[i];
+            // If output file descriptor is marked as -3, connect it to the next pipe
+            if (tmp->out_fd == -3)
+                tmp->out_fd = mini->pipe_fd_arr[i + 3];
+            i += 2; // Move to the next pair of pipe file descriptors
+        }
+        tmp = tmp->next; // Move to the next command
+    }
+}
+
+/*
+ * executor.prep_for_exec
+ * function is responsible for creating pipes needed for inter-process communication between commands.
+ * It allocates an array of file descriptors (mini->pipe_fd_arr) and initializes them using the pipe system call.
+ * checks if there is more than one command (mini->cmd_count > 1) and dynamically allocates space for the array of file descriptors.
+ *  It then uses a loop to create pipes using the pipe system call, updating the array of file descriptors accordingly.
+ *
+*/
+int	create_pipes(t_minishell	*mini)
+{
+	int	i;
+
+	i = 0;
+	if (mini->cmd_count > 1)
+		mini->pipe_fd_arr = (int *)malloc(sizeof(int) * mini->pipe_count * 2);
+	while (i < mini->pipe_count * 2)
+	{
+		if (pipe(mini->pipe_fd_arr + i) == -1) // from unistd.h
+			return (ft_strerror("Pipes creating", "error"), -1);
+		i += 2;
+	}
+	return (0);
+}
+
+/*
+ * executor.prep_for_exec
+ * The ft_redirect_inputs_outputs function is responsible for iterating over the commands in the mini data structure 
+ * and performing the necessary setup for input and output redirection for each command by calling
+ * the open_outfile and open_infile functions.
+*/
+void ft_redirect_inputs_outputs(t_minishell *mini)
+{
+    t_cmd *tmp;
+
+    // Iterate over the commands in the mini data structure
+    tmp = mini->cmd_lst;
+    while (tmp)
+    {
+        // Handle output file redirection
+        open_outfile(tmp, &mini->exit_status);
+
+        // Handle input file redirection
+        open_infile(tmp, &mini->exit_status);
+
+        // Move to the next command
+        tmp = tmp->next;
+    }
+}
+
+/*
+ * executor
+ * Function closes all the file descriptors associated with pipes in the mini structure
+ * The function uses a loop to iterate through the array mini->pipe_fd_arr, which contains file descriptors associated with pipes.
+ * For each iteration, it calls the ft_close_two_fd function to close the read and write ends of the pipe. This is done by passing the addresses of the current pair of file descriptors.
+ * The loop increments i by 2 in each iteration to move to the next pair of file descriptors in the array.
+*/
+void ft_close_pipes(t_minishell *mini)
+{
+    int i;
+
+    i = 0;
+
+    // Iterate through the array of pipe-related file descriptors
+    while (i < mini->pipe_count * 2)
+    {
+        // Close the read and write ends of the pipe
+        ft_close_two_fd(&mini->pipe_fd_arr[i], &mini->pipe_fd_arr[i + 1]);
+
+        // Move to the next pair of file descriptors
+        i += 2;
+    }
+}
+
+/*
+ * executor.ext_or_build
+ * Executes a built-in command by calling the appropriate function
+ * for the corresponding built-in command (e.g., ft_cd, ft_export, ft_unset, ft_exit).
+*/
+int	ft_execute_builtin(t_minishell *mini, t_cmd *cmd)
+{
+	int	res;
+
+	res = 0;
+	if (cmd->in_fd > 0)
+		close(cmd->in_fd);
+	if (cmd->out_fd > 0)
+		close(cmd->out_fd);
+	if (ft_strncmp(cmd->cmd_args[0], "cd", 3) == 0)
+		res = ft_cd(mini, cmd);
+	else if (ft_strncmp(cmd->cmd_args[0], "export", 7) == 0)
+		res = ft_export(mini, cmd);
+	else if (ft_strncmp(cmd->cmd_args[0], "unset", 6) == 0)
+		res = ft_unset(mini, cmd);
+	else if (ft_strncmp(cmd->cmd_args[0], "exit", 5) == 0)
+		res = ft_exit(mini, cmd);
+	return (res);
+}
+
+/*
+ * executor.ext_or_build.execute_cmd
+ * function is responsible for executing built-in commands in a child process. 
+ * It checks the command name and calls the corresponding built-in function.
+ * The purpose of forking a child process for built-ins is to isolate their execution and avoid affecting the main shell process.
+ * 
+*/
+void	ft_execute_fork_builtin(t_minishell *mini, t_cmd *cmd)
+{
+	// Check if the command is "echo"
+	if (ft_strncmp(cmd->cmd_args[0], "echo", 5) == 0)
+		ft_echo(cmd);
+	// Check if the command is "pwd"
+	else if (ft_strncmp(cmd->cmd_args[0], "pwd", 4) == 0)
+		ft_pwd(cmd);
+	// it's "env"
+	else
+		ft_env(mini);
+
+	// Exit the child process with status 0
+	exit(0);
+}
+
+/*
+ * executor.ext_or_build
  * function forks a child process using fork() and then executes the command in the child process.
  * signal handler for the SIGINT signal in the child process. This means that when the child process receives the SIGINT signal 
  * (which is typically triggered by pressing Ctrl+C in the terminal), the exit_on_interrupt function will be called.
@@ -1596,8 +1601,8 @@ static void	ft_exe_ext_or_build(t_minishell *mini, t_cmd *tmp, char **envp)
 	signal(SIGINT, clear_input_on_interrupt);
 }
 
-
 /*
+ *  executor
  *  This function is responsible for the initial setup before executing commands.
  *  It calls create_pipes to set up pipes for communication between commands. 
  *  If create_pipes fails, it sets mini->exit_status to 1 and returns -1.
@@ -1622,8 +1627,6 @@ static int	ft_prep_for_exec(t_minishell *mini)
 
 	return (0);
 }
-
-
 
 /*
  *	main entry point for executing commands in a shell or command-line interpreter
