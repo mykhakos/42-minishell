@@ -310,7 +310,7 @@ void	ft_cleaning(t_minishell *mini)
 }
 
 /*
- * function effectively 
+ * function
  * extracts the key part of an environment variable string by copying characters until the equals sign.
  * It then returns a dynamically allocated string containing the key.
  */
@@ -348,7 +348,7 @@ char *ft_separate_key(char *env)
 }
 
 /*
- * function effectively extracts the value part of an environment variable string 
+ * function extracts the value part of an environment variable string 
  * by copying characters from the position following the equals sign until the end of the string. 
  * 
 */
@@ -412,54 +412,6 @@ int	ft_isnum(char *arg)
 	return (TRUE);
 }
 
-static void ft_remove_node_ext(t_env_var *to_remove)
-{
-	// Free memory for the key, value, and the node itself
-	free(to_remove->key);
-	free(to_remove->value);
-	free(to_remove);
-}
-
-void ft_remove_node(t_env_var **head, char *key)
-{
-	t_env_var *current;
-	t_env_var *prev;
-	t_env_var *to_remove;
-	int first;
-
-	// Check if the head of the list is NULL or if the key is NULL
-	if (*head == NULL || !key)
-		return;
-
-	// Initialize pointers
-	current = *head;
-	first = TRUE;
-
-	// Traverse the list
-	while (current)
-	{
-		// Check if the key matches
-		if (ft_strncmp(current->key, key, ft_strlen(key)) == 0)
-		{
-			to_remove = current;
-
-			// Update the head if the first element is being removed
-			if (first)
-				*head = current->next;
-            else
-                prev->next = current->next;
-
-            // Remove the node
-            ft_remove_node_ext(to_remove);
-            return;
-        }
-
-        // Update pointers for the next iteration
-        first = FALSE;
-        prev = current;
-        current = current->next;
-    }
-}
 
 void	ft_strerror(char *msg, char *name)
 {
@@ -470,7 +422,10 @@ void	ft_strerror(char *msg, char *name)
 }
 
 
+/*  ********  S_______ ********* */
 /*  ********  BUILTINS ********* */
+/*  ********  ________ ********* */
+
 /*
  *
  * implement the behavior of the echo command
@@ -599,7 +554,7 @@ void	ft_cd_update_cwd(t_minishell *mini, char *cwd, char *pcwd)
 
 /*
  * Processes the command argument for cd and returns the updated path. 
- * It handles relative paths such as ".", "..", "./", and "../" by modifying the current working directory accordingly.
+ * It handles relative paths such as ".", "..", "./", and "../" == parent directory, by modifying the current working directory accordingly.
 */
 char *cd_dot_ext(char *pcwd, t_cmd *cmd)
 {
@@ -646,7 +601,7 @@ char *cd_dot_ext(char *pcwd, t_cmd *cmd)
  *  Calls dot_ext when the argument starts with a dot ('.').
  *  Combines the home directory with the specified path in cmd->cmd[1] and returns the result.
 */
-char	*get_arg_cd_ext(char *home, char *pcwd, t_cmd *cmd, char c)
+char	*cd_tilda_dot_ext(char *home, char *pcwd, t_cmd *cmd, char c)
 {
 	char	*res;
 	char	*tmp;
@@ -675,7 +630,7 @@ char	*get_arg_cd_ext(char *home, char *pcwd, t_cmd *cmd, char c)
  *  Constructs the path argument for the cd command based on different cases.
  *  If no argument is provided, returns the home directory.
  *  If the argument is "-", returns the previous working directory.
- *  Handles cases where the argument starts with "~" or ".", calling get_arg_cd_ext accordingly.
+ *  Handles cases where the argument starts with "~" or ".", calling cd_tilda_dot_ext accordingly.
  *  Otherwise, returns the specified argument.
 */
 char	*get_arg_cd(t_cmd *cmd, char *home, char *old_cwd, char *pcwd)
@@ -692,7 +647,7 @@ char	*get_arg_cd(t_cmd *cmd, char *home, char *old_cwd, char *pcwd)
 	else if (cmd->cmd_args[1] && ft_strncmp(cmd->cmd_args[1], "-", 2) == 0)
 		return (ft_strdup(old_cwd));
 	else if (cmd->cmd_args[1] && (cmd->cmd_args[1][0] == '~' || cmd->cmd_args[1][0] == '.'))
-		res = get_arg_cd_ext(home, pcwd, cmd, cmd->cmd_args[1][0]);
+		res = cd_tilda_dot_ext(home, pcwd, cmd, cmd->cmd_args[1][0]);
 	else
 		res = ft_strdup(cmd->cmd_args[1]);
 	return (res);
@@ -800,7 +755,7 @@ void ft_add_end(t_env_var **head, char *env)
  *  Checks if a command is a valid identifier for the export command.
  *  Verifies that the command starts with an alphabet character or an underscore, and contains an equal sign (=).
 */
-static int	ex_command_tester(char *comm)
+static int	export_comm_test(char *comm)
 {
 	int	i;
 
@@ -861,7 +816,7 @@ void ft_update_path(t_minishell *mini)
 
 /*
  *  Handles the export command, adding or updating environment variables.
- *  Calls ex_command_tester to validate the command.
+ *  Calls export_comm_test to validate the command.
  *  If the command is valid, either updates an existing environment variable or adds a new one.
  *  Cleans the mini->path array, then refills it with the updated environment variables.
  *  Prints the exported environment variables.
@@ -872,7 +827,7 @@ int	ft_export(t_minishell *mini, t_cmd *cmd)
 
 	if (cmd->cmd_args[1])
 	{
-		if (!ex_command_tester(cmd->cmd_args[1]))
+		if (!export_comm_test(cmd->cmd_args[1]))
 			return (2);
 		if (check_env_var_and_repl(&mini->env_var_lst, cmd) == FALSE)
 			ft_add_end(&mini->env_var_lst, cmd->cmd_args[1]);
@@ -889,6 +844,61 @@ int	ft_export(t_minishell *mini, t_cmd *cmd)
 		cur = cur->next;
 	}
 	return (0);
+}
+
+/*
+ * part unset
+*/
+static void ft_remove_node_ext(t_env_var *to_remove)
+{
+	// Free memory for the key, value, and the node itself
+	free(to_remove->key);
+	free(to_remove->value);
+	free(to_remove);
+}
+
+/*
+ * part unset
+*/
+void ft_remove_node(t_env_var **head, char *key)
+{
+	t_env_var *current;
+	t_env_var *prev;
+	t_env_var *to_remove;
+	int first;
+
+	// Check if the head of the list is NULL or if the key is NULL
+	if (*head == NULL || !key)
+		return;
+
+	// Initialize pointers
+	current = *head;
+	first = TRUE;
+
+	// Traverse the list
+	while (current)
+	{
+		// Check if the key matches
+		if (ft_strncmp(current->key, key, ft_strlen(key)) == 0)
+		{
+			to_remove = current;
+
+			// Update the head if the first element is being removed
+			if (first)
+				*head = current->next;
+            else
+                prev->next = current->next;
+
+            // Remove the node
+            ft_remove_node_ext(to_remove);
+            return;
+        }
+
+        // Update pointers for the next iteration
+        first = FALSE;
+        prev = current;
+        current = current->next;
+    }
 }
 
 /*
@@ -953,6 +963,11 @@ int	ft_exit(t_minishell *mini, t_cmd *cmd)
 	ft_cleaning(mini);
 	exit(res);
 }
+
+/*  ********  E_______ ********* */
+/*  ********  BUILTINS ********* */
+/*  ********  ________ ********* */
+
 
 /*
  *
@@ -1238,48 +1253,6 @@ void	exit_on_interrupt(int signal)
 }
 
 
-/*
- *
- * function designed to handle a here document (heredoc) in the context of command execution. 
- * A heredoc allows input to be provided directly within the script or command, typically terminated by a specific delimiter. 
- * The function sets up a pipe, reads lines from the user, writes them to the write end of the pipe, and redirects the read end 
- * of the pipe to the input file descriptor of the command.
- * t creates a pipe using the pipe system call. The pipe has two ends: fd[0] (read end) and fd[1] (write end).
- * It enters an infinite loop to read lines from the user using readline.
- * Inside the loop:
- * If the user enters a null line or a line matching the specified terminator (node->in_filename), the loop is terminated.
- * Otherwise, the function writes the line followed by a newline character to the write end of the pipe (fd[1]).
- * After the loop, it checks if line is not null (indicating a successful readline), and if so, frees the allocated memory for line.
- * It closes the write end of the pipe (fd[1]) and the original input file descriptor of the command (node->in_fd).
- * It assigns the read end of the pipe (fd[0]) to the input file descriptor of the command (node->in_fd), establishing the connection between the heredoc and the command.
- * 
-*/
-int	heredoc_function(t_cmd *node)
-{
-	int		fd[2];
-	char	*line;
-
-	if (pipe(fd) == -1)
-		return (ft_strerror(strerror(errno), "heredoc pipe"), -1);
-	else
-	{
-		while (1)
-		{
-			line = readline("heredoc> ");
-			if (line == NULL || (ft_strncmp(line, node->in_filename,
-						ft_strlen(node->in_filename) + 1) == 0))
-				break ;
-			write(fd[1], line, ft_strlen(line));
-			write(fd[1], "\n", 1);
-		}
-		if (line)
-			free(line);
-		ft_close_two_fd(&fd[1], &node->in_fd);
-		node->in_fd = fd[0];
-	}
-	return (0);
-}
-
 static int	check_path(t_minishell *mini, t_cmd *node)
 {
 	char	*tmp;
@@ -1368,7 +1341,7 @@ int	ft_execute_builtin(t_minishell *mini, t_cmd *cmd)
 }
 
 /*
- *
+ * executor.execute_cmd
  * function is responsible for executing built-in commands in a child process. 
  * It checks the command name and calls the corresponding built-in function.
  * The purpose of forking a child process for built-ins is to isolate their execution and avoid affecting the main shell process.
@@ -1391,6 +1364,50 @@ void	ft_execute_fork_builtin(t_minishell *mini, t_cmd *cmd)
 }
 
 /*
+ *
+ * executor.execute_cmd
+ * function designed to handle a here document (heredoc) in the context of command execution. 
+ * A heredoc allows input to be provided directly within the script or command, typically terminated by a specific delimiter. 
+ * The function sets up a pipe, reads lines from the user, writes them to the write end of the pipe, and redirects the read end 
+ * of the pipe to the input file descriptor of the command.
+ * t creates a pipe using the pipe system call. The pipe has two ends: fd[0] (read end) and fd[1] (write end).
+ * It enters an infinite loop to read lines from the user using readline.
+ * Inside the loop:
+ * If the user enters a null line or a line matching the specified terminator (node->in_filename), the loop is terminated.
+ * Otherwise, the function writes the line followed by a newline character to the write end of the pipe (fd[1]).
+ * After the loop, it checks if line is not null (indicating a successful readline), and if so, frees the allocated memory for line.
+ * It closes the write end of the pipe (fd[1]) and the original input file descriptor of the command (node->in_fd).
+ * It assigns the read end of the pipe (fd[0]) to the input file descriptor of the command (node->in_fd), establishing the connection between the heredoc and the command.
+ * 
+*/
+int	heredoc_function(t_cmd *node)
+{
+	int		fd[2];
+	char	*line;
+
+	if (pipe(fd) == -1)
+		return (ft_strerror(strerror(errno), "heredoc pipe"), -1);
+	else
+	{
+		while (1)
+		{
+			line = readline("heredoc> ");
+			if (line == NULL || (ft_strncmp(line, node->in_filename,
+						ft_strlen(node->in_filename) + 1) == 0))
+				break ;
+			write(fd[1], line, ft_strlen(line));
+			write(fd[1], "\n", 1);
+		}
+		if (line)
+			free(line);
+		ft_close_two_fd(&fd[1], &node->in_fd);
+		node->in_fd = fd[0];
+	}
+	return (0);
+}
+
+/*
+ * executor.execute_cmd
  * function that handles input and output redirection before executing the command in the child process.
 */
 static int ft_in_out_handler(t_cmd *node, int is_builtin_out)
@@ -1564,6 +1581,7 @@ int execute_cmd(t_cmd *node, t_minishell *mini, char **env)
 }
 
 /*
+ * executor
  * This function executes a single command (t_cmd) based on whether it is a built-in command or an external command.
  * If it is a built-in command and does not produce output (!ft_is_builtin_with_output(tmp->cmd[0])), it calls ft_execute_builtin to handle the built-in command execution.
  * If it is an external command, it calls execute_cmd to execute the command.
