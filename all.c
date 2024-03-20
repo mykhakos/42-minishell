@@ -133,7 +133,7 @@ typedef struct s_node
 */
 
 /*
-linked list for environment variables
+linked list for environment variables env**
 */
 typedef struct s_env_var
 {
@@ -640,7 +640,7 @@ char *ft_separate_value(char *env)
 }
 
 /*
- * export
+ * main.ft_minishell_init.create env_list, export
  * extracts the key part of an environment variable string by copying characters until the equals sign.
  * It then returns a dynamically allocated string containing the key.
  */
@@ -789,7 +789,7 @@ void ft_update_path(t_minishell *mini)
     // Traverse the linked list
     while (current != NULL)
     {
-        // Check if the current node's key is "PATH"
+        // Check if the current node's key is "PATH", key is is structure part of ll which is terminated with \0.
         if (ft_strncmp(current->key, "PATH", 5) == 0)
         {
             // Split the value of "PATH" using ':' as the delimiter and store in mini->path
@@ -1638,10 +1638,10 @@ static int	ft_prep_for_exec(t_minishell *mini)
 }
 
 /*
- *	main entry point for executing commands in a shell or command-line interpreter
- *
- *	The function begins by checking if the preparation for execution (setting up pipes and redirections) was successful by calling ft_prep_for_exec. 
- *	If not, it returns early.
+ *	main 
+ * entry point for executing commands in a shell or command-line interpreter
+ * The function begins by checking if the preparation for execution (setting up pipes and redirections) was successful by calling ft_prep_for_exec. 
+ * If not, it returns early.
  * It then iterates through the linked list of command nodes (t_cmd). For each node:
  * It checks for conditions where the command execution should be skipped:
  * If the command is empty (!tmp->cmd[0]), or
@@ -1691,8 +1691,6 @@ void ft_executor(t_minishell *mini, char **envp)
     ft_close_pipes(mini);
 }
 
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1700,7 +1698,6 @@ void ft_executor(t_minishell *mini, char **envp)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 /*
  * new_elem
@@ -2786,7 +2783,7 @@ int ft_line(t_minishell *mini)
  * main.ft_minishell_init
  * This function essentially converts an array of environment variables into a linked list 
 */
-t_env_var *create_env_list(char **env)
+t_env_var *create_env_list(char **environ)
 {
     t_env_var *head;
     int i;
@@ -2795,10 +2792,10 @@ t_env_var *create_env_list(char **env)
     head = NULL;
 
     // Iterate through the array of environment variables
-    while (env[i])
+    while (environ[i])
     {
         // Add each environment variable to the linked list
-        ft_add_end(&head, env[i]);
+        ft_add_end(&head, environ[i]);
         i++;
     }
 
@@ -2810,7 +2807,7 @@ t_env_var *create_env_list(char **env)
  * main
  * getenv("USER"): This function is used to retrieve the value of the environment variable with the name "USER." It returns a pointer to the value as a string.
 */
-void ft_minishell_init(t_minishell *mini, char **envp)
+void ft_minishell_init(t_minishell *mini, char **environ)
 {
     char	*tmp;
 
@@ -2823,7 +2820,7 @@ void ft_minishell_init(t_minishell *mini, char **envp)
     mini->token_lst = NULL;
 
     // Create a linked list representing environment variables
-    mini->env_var_lst = create_env_list(envp);
+    mini->env_var_lst = create_env_list(environ);
 
     // Set up the shell prompt
     tmp = getenv("USER");
