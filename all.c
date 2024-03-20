@@ -175,6 +175,10 @@ typedef struct s_data
     t_node_cmd	*cmds;      // Linked list representing parsed commands
 }	t_data;
 */
+
+/*
+ * cleaning 
+*/
 void	path_clean(t_minishell *mini)
 {
 	int	i;
@@ -189,7 +193,8 @@ void	path_clean(t_minishell *mini)
 }
 
 /*
- *  function is responsible for deallocating the memory occupied by a linked list of environment variables (t_node structure)
+ * cleaning 
+ * function is responsible for deallocating the memory occupied by a linked list of environment variables (t_node structure)
 */
 void	remove_env_list(t_env_var **head)
 {
@@ -237,6 +242,7 @@ static void	remove_cmd_list_ext(t_cmd *current)
 }
 
 /*
+ * cleaning
  * A loop is used to traverse the list:
  * The tmp pointer is used to temporarily store the address of the next node.
  * The remove_cmd_list_ext function is called to free memory for the current node.
@@ -263,7 +269,7 @@ void	remove_cmd_list(t_cmd **head)
 }
 
 /*
- *
+ * cleaning, reset values
  *loop is used to traverse the list:
  * The next pointer is used to temporarily store the address of the next element.
  * Memory for the content of the current element (current->content) is freed using free.
@@ -311,24 +317,6 @@ void	ft_cleaning(t_minishell *mini)
 	if (mini->prev_cwd)
 		free(mini->prev_cwd);
 }
-
-/*
- * Checks if a given string represents a numeric value.
-*/
-int	ft_isnum(char *arg)
-{
-	int	i;
-
-	i = 0;
-	while (arg[i] != '\0')
-	{
-		if (arg[i] < '0' || arg[i] > '9')
-			return (FALSE);
-		i++;
-	}
-	return (TRUE);
-}
-
 
 void	ft_strerror(char *msg, char *name)
 {
@@ -718,7 +706,7 @@ int	check_env_var_and_repl(t_env_var **head, t_cmd *cmd)
 }
 
 /*
- * part export, create env_list
+ * part export, main.ft_minishell_init.create env_list
  * linked list manipulation, specifically adding nodes to the end of the linked list to represent environment variables.
  * It extracts the key and value from the environment variable string env using the ft_separate_key and ft_separate_value functions.
  */
@@ -937,6 +925,24 @@ int	ft_unset(t_minishell *mini, t_cmd *cmd)
 			current = current->next;
 	}
 	return (0);
+}
+
+/*
+ * exit
+ * Checks if a given string represents a numeric value.
+*/
+int	ft_isnum(char *arg)
+{
+	int	i;
+
+	i = 0;
+	while (arg[i] != '\0')
+	{
+		if (arg[i] < '0' || arg[i] > '9')
+			return (FALSE);
+		i++;
+	}
+	return (TRUE);
 }
 
 /*
@@ -1697,7 +1703,7 @@ void ft_executor(t_minishell *mini, char **envp)
 
 
 /*
- *
+ * new_elem
  * Function, which creates a duplicate (copy) of the input string s1 up to a specified maximum length n.
 */
 char *ft_strndup(char *s1, int n)
@@ -1731,6 +1737,7 @@ char *ft_strndup(char *s1, int n)
 }
 
 /*
+ * make token
  * constructing a linked list of tokens during the tokenization process
  */
 t_elem	*new_elem(char *content, int len, enum e_token type, enum e_state state)
@@ -1751,13 +1758,16 @@ t_elem	*new_elem(char *content, int len, enum e_token type, enum e_state state)
 	return (elem);
 }
 
-
+/*
+ * add_tail
+*/
 static int	is_empty(t_token *list)
 {
 	return (list->head == NULL);
 }
 
 /*
+ * make token
  * mechanism to manage a doubly-linked list (t_list_n). 
  * It updates the tail of the list and adjusts pointers to add a new element to the end of the list. 
  */
@@ -1908,6 +1918,7 @@ static int	in_charset(char c)
 }
 
 /*
+ * make_token
  * processes a word in the input string until a non-word character is encountered.
  * It adds a new token to the linked list (tokens) representing the word.
 */
@@ -1963,6 +1974,9 @@ int ft_make_token(t_token *tokens, char *str, int i, enum e_state *state)
     return i;
 }
 
+/*
+ * lexer
+*/
 t_token	*init_list(t_token *list)
 {
 	list = ft_calloc(sizeof(t_token), 1);
@@ -2009,7 +2023,7 @@ t_token *lexer(char *line)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
- *
+ * redir_err, pipe_err
  * ptr is a pointer to a token (t_elem) representing the current position in the token list.
  * opt is an integer parameter that determines the direction in which to skip space. If opt is non-zero (true), it means skipping forward (using ptr->next), otherwise, it means skipping backward (using ptr->prev).
  * The function uses a while loop to iterate through consecutive white space tokens. Inside the loop:
@@ -2050,7 +2064,7 @@ int	pipe_err(t_elem *el)
 }
 
 /*
- *
+ * sintax_check
  * This function checks for syntax errors in redirections (e.g., <, >, >>).
  * It looks at the next token after the redirection symbol and ensures it is of a valid type (WORD, ENV, DOUBLE_QUOTE, or QOUTE).
 */
@@ -2066,7 +2080,7 @@ int	redir_err(t_elem *ptr)
 }
 
 /*
- *
+ * sintax_check
  * function checks for unclosed quotes (single or double quotes).
  * It iterates through the tokens until it finds a token of the specified type or reaches the end of the list.
  * If it doesn't find the closing quote, it prints an error message and returns the position where the unclosed quotes were detected.
@@ -2089,8 +2103,8 @@ t_elem	*quotes_err(t_elem **ptr, enum e_token type)
 }
 
 /*
- *
- *  function returns a string representation of the redirection symbol associated with the given type.
+ * sintax_check
+ * function returns a string representation of the redirection symbol associated with the given type.
  * It uses ft_strdup to create a duplicate of the string.
 */
 char	*get_redir_symb(enum e_token type)
@@ -2107,8 +2121,8 @@ char	*get_redir_symb(enum e_token type)
 }
 
 /*
- *
- * ft_perror takes two parameters: msg (the main error message) and utils (additional information or a specific character, possibly a pipe character).
+ * sintax_check
+ * takes two parameters: msg (the main error message) and utils (additional information or a specific character, possibly a pipe character).
  * It uses the write function to output the main error message and additional information (if provided) to the standard error output.
  * It checks if utils is not NULL before attempting to use it.
  * If utils is not NULL and doesn't represent a pipe character ("|"), it frees the allocated memory for utils 
@@ -2184,6 +2198,10 @@ int sintax_check(t_token *list)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+/*
+ * ft_line
+*/
 static int	ft_has_characters(char *line)
 {
 	int	i;
@@ -2202,8 +2220,8 @@ static int	ft_has_characters(char *line)
 }
 
 /*
- *
- * The get_pipe_nbr function takes a linked list of elements (t_list_n) and counts the number of pipe tokens (PIPE_LINE) in the list.
+ * ft_line
+ * takes a linked list of elements (t_list_n) and counts the number of pipe tokens (PIPE_LINE) in the list.
  * It iterates through the elements and increments the count 
 */
 static int	get_pipe_nbr(t_token *list)
@@ -2223,7 +2241,7 @@ static int	get_pipe_nbr(t_token *list)
 }
 
 /*
- *
+ * parse_env, parse_quot_ext, get_name
  * The function starts by initializing a pointer (current) to the head of the environment list.
  * It then iterates through the linked list (while (current)) and compares the key of each node with the provided key using ft_strncmp.
  * If a match is found, it returns a duplicated copy of the corresponding value using ft_strdup.
@@ -2251,7 +2269,7 @@ char *get_env(t_env_var *env, char *key)
 }
 
 /*
- *
+ * parsing.new_cmd_node.parse_env
  * special case when the environment variable is "$?". It converts the exit status to a string and stores it in the args array.
 */
 static void parse_env_ext(int ex_stat, char **args, int *i)
@@ -2261,6 +2279,10 @@ static void parse_env_ext(int ex_stat, char **args, int *i)
     free(tmp);
 }
 
+
+/*
+ * parsing.new_cmd_node
+*/
 void parse_env(t_elem **elem, char **args, int *i, t_minishell *mini)
 {
     char *tmp;
@@ -2300,7 +2322,9 @@ void parse_env(t_elem **elem, char **args, int *i, t_minishell *mini)
     (*elem) = (*elem)->next;
 }
 
-
+/*
+ * parsing.new_cmd_node
+*/
 void parse_word(t_elem **elem, char **args, int *i)
 {
     // Extract the content of the WORD token and store it in the args array
@@ -2312,7 +2336,7 @@ void parse_word(t_elem **elem, char **args, int *i)
 }
 
 /*
- *
+ * parse_quot_ext
  *  It concatenates the value of the environment variable (val) to the current line variable.
 */
 static char	*parse_quot_ext_ext(t_elem **node, char **val, char **line)
@@ -2342,7 +2366,7 @@ static char	*parse_quot_ext_ext(t_elem **node, char **val, char **line)
 
 
 /*
- *
+ * parsing.new_cmd_node.parse_quo
  * s responsible for handling the content inside quotes. 
  * It checks if the current token is an environment variable (ENV) and if it is within double quotes (IN_DQUOTE). 
  * If so, it retrieves the value of the environment variable and appends it to the line variable.
@@ -2367,7 +2391,7 @@ static void	parse_quot_ext(t_elem **node, char **val, char **line, t_minishell *
 }
 
 /*
- *
+ * get_name, parsing.new_cmd_node
  * designed to parse the content within quotes (QOUTE or DOUBLE_QUOTE). 
  * It appends the content within the quotes to the line variable and handles special cases where the content inside quotes includes environment variables.
  * The val variable is used to store the value of environment variables if they are present inside the quotes.
@@ -2399,6 +2423,7 @@ char	*parse_quo(char *line, t_elem **node, enum e_token type, t_minishell *mini)
 	return (line);
 }
 /*
+ * parsing.new_cmd_node.parse_redir
  * etrieves the name (path or file descriptor) associated with a redirection.
  * It considers different cases, such as quotes (DOUBLE_QUOTE or QOUTE), environment variables (ENV), and regular words (WORD).
  *
@@ -2426,7 +2451,7 @@ char	*get_name(t_elem **node, t_minishell *mini)
 }
 
 /*
- *
+ * parsing.new_cmd_node.parse_redir
  * Function checks if a redirection is already set in a t_cmd structure and clears the associated data if needed. 
  * It's called before parsing a new redirection to avoid conflicts.
 */
@@ -2450,7 +2475,7 @@ void	check_redir(t_cmd *new, enum e_token type)
 }
 
 /*
- *
+ * parsing.new_cmd_node
  * edirection token (REDIR_IN, REDIR_OUT, DREDIR_OUT, HERE_DOC) and sets the appropriate fields in the t_cmd structure.
  * It also retrieves the associated name using the get_name function.
 */
@@ -2476,7 +2501,7 @@ void	parse_redir(t_elem **node, t_minishell *mini, t_cmd	*new)
 }
 
 /*
- *
+ * parsing.new_cmd_node
  * function initializes a new t_cmd structure. The parameters are the size of the command (number of arguments) and
  * a pointer i that will be used to keep track of the current index while populating the cmd array.
  * The function allocates memory for the structure and its arrays (cmd) and initializes various fields.
@@ -2505,7 +2530,7 @@ t_cmd	*new_cmd_node_init(int size, int *i)
 
 
 /*
- *
+ * parsing
  * iterates through the input list, parsing tokens based on their types. 
  * It handles different token types, such as WORD, ENV, WHITE_SPACE, DOUBLE_QUOTE, QOUTE, and redirection tokens 
 */
@@ -2546,7 +2571,7 @@ t_cmd *new_cmd_node(t_elem **list, int size, t_minishell *mini)
 
 
 /*
- *
+ * parsing.count_args
  * Increments the argument count (*i) based on the type of the token. 
  * For quotes, it iterates until it finds the closing quote. For redirection tokens, it skips to the next WORD or ENV token.
  *  while loop iterates through the list of t_elem elements using the pointer (*elem).
@@ -2571,7 +2596,7 @@ void	count_quotes_redir_args(t_elem **elem, enum e_token type, int *i)
 }
 
 /*
- *
+ * parsing
  * counts the number of arguments until it encounters a PIPE_LINE token.
  * It considers different token types such as WORD, ENV, DOUBLE_QUOTE, QOUTE, and redirection tokens (is_redir). 
 */
@@ -2601,7 +2626,7 @@ int	count_args(t_elem *elem)
 }
 
 /*
- *
+ * parsing
  * or building a linked list of t_cmd nodes, where each node represents a command in the execution sequence of a shell.
  * The linked list is extended as new commands are encountered.
 */
@@ -2651,7 +2676,11 @@ static	t_cmd *parsing(t_token *list, t_minishell *mini)
 	return (commands);
 }
 
-int is_full(char *str)
+
+/*
+ * abs_path_check
+*/
+int ft_file_exist(char *str)
 {
     int res;
 
@@ -2671,7 +2700,7 @@ int is_full(char *str)
  *
  * The function takes a pointer to the head of the linked list (head), which consists of t_cmd nodes.
  * It initializes a pointer (current) to traverse the linked list, starting from the head.
- * Inside the loop, for each node, it checks if the command's path is already an absolute path using the is_full function (which is assumed to return a boolean value).
+ * Inside the loop, for each node, it checks if the command's path is already an absolute path using the ft_file_exist function (which is assumed to return a boolean value).
  * If the command's path is an absolute path, it allocates memory for the path attribute of the node and copies the absolute path using ft_strdup.
  * The return statement is used to exit the function after setting the path for the first node with an absolute path. Assuming that only one absolute path command is expected, this prevents unnecessary iterations.
 */
@@ -2684,7 +2713,7 @@ static void abs_path_check(t_cmd **head)
     while (current)
     {
         // Check if the command's path is already an absolute path
-        if (is_full(current->cmd_args[0]))
+        if (ft_file_exist(current->cmd_args[0]))
         {
             // If it is, set the path attribute to the absolute path
             current->exec_path = ft_strdup(current->cmd_args[0]);
@@ -2697,6 +2726,7 @@ static void abs_path_check(t_cmd **head)
 }
 
 /*
+ * main
  * entry point for lex analyzer
  * handle the processing of a user input line in a shell-like program,
  * including reading input, checking syntax, and preparing data structures 
@@ -2753,6 +2783,7 @@ int ft_line(t_minishell *mini)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
+ * main.ft_minishell_init
  * This function essentially converts an array of environment variables into a linked list 
 */
 t_env_var *create_env_list(char **env)
@@ -2776,6 +2807,7 @@ t_env_var *create_env_list(char **env)
 }
 
 /*
+ * main
  * getenv("USER"): This function is used to retrieve the value of the environment variable with the name "USER." It returns a pointer to the value as a string.
 */
 void ft_minishell_init(t_minishell *mini, char **envp)
@@ -2817,7 +2849,7 @@ void ft_minishell_init(t_minishell *mini, char **envp)
 
 
 /*
- *
+ * main
  * The function begins by checking if the mini->cmd_lst field (presumably representing a list of commands) is not NULL. If it's not NULL, the remove_cmd_list function is called to free the memory associated with the command list.
  * Similarly, the function checks if the mini->lex field (presumably representing a linked list of lexemes) is not NULL. If it's not NULL, the free_list function is called to free the memory associated with the lexeme list.
  * The function then resets the fields mini->cmd_count and mini->pipe_count to zero, indicating no commands and no pipes.
