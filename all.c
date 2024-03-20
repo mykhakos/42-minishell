@@ -289,6 +289,9 @@ void	free_list(t_token *list)
 	free(list);
 }
 
+/*
+ * exit, line
+*/
 void	ft_cleaning(t_minishell *mini)
 {
 	path_clean(mini);
