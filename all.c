@@ -773,7 +773,7 @@ static int	export_comm_test(char *comm)
 }
 
 /*
- * part export, unset, init
+ * part export, unset, main.minishell_init
  * extract the "PATH" variable from the environment variables and store its components (directories)
  * in the mini->exec_paths array for later use. 
  * The assumption here is that the "PATH" variable contains directories separated by colons,
@@ -1737,7 +1737,7 @@ char *ft_strndup(char *s1, int n)
  * make token
  * constructing a linked list of tokens during the tokenization process
  */
-t_elem	*new_elem(char *content, int len, enum e_token type, enum e_state state)
+t_elem	*new_elem(char *input_line_index, int len, enum e_token type, enum e_state state)
 {
 	t_elem	*elem;
 	char	*cont;
@@ -1745,7 +1745,7 @@ t_elem	*new_elem(char *content, int len, enum e_token type, enum e_state state)
 	elem = ft_calloc(sizeof(t_elem), 1);
 	if (!elem)
 		return (NULL);
-	cont = ft_strndup(content, len);
+	cont = ft_strndup(input_line_index, len);
 	if (!cont)
 		return (NULL);
 	elem->content = cont;
@@ -1788,29 +1788,29 @@ void	add_tail(t_token *list, t_elem *new)
  *  The tokens are added to the linked list for further processing in the lexer.
  *
  */
-int make_token_redir(t_token *tokens, char *str, int idx, enum e_state state)
+int make_token_redir(t_token *tokens, char *input_line, int idx, enum e_state state)
 {
     int i = idx;
 
     // Check if the current character is '<' (input redirection)
-    if (str[idx] == '<')
+    if (input_line[idx] == '<')
     {
         // Check if the next character is also '<' (here document)
-        if (str[idx + 1] && str[idx + 1] == '<')
-            add_tail(tokens, new_elem(str + idx++, 2, HERE_DOC, state));
+        if (input_line[idx + 1] && input_line[idx + 1] == '<')
+            add_tail(tokens, new_elem(input_line + idx++, 2, HERE_DOC, state));
         else
-            add_tail(tokens, new_elem(str + idx, 1, REDIR_IN, state));
+            add_tail(tokens, new_elem(input_line + idx, 1, REDIR_IN, state));
         
         idx++;  // Increment the index to move to the next character
     }
     // Check if the current character is '>' (output redirection)
-    else if (str[idx] == '>')
+    else if (input_line[idx] == '>')
     {
         // Check if the next character is also '>' (double output redirection)
-        if (str[idx + 1] && str[idx + 1] == '>')
-            add_tail(tokens, new_elem(str + idx++, 2, DREDIR_OUT, state));
+        if (input_line[idx + 1] && input_line[idx + 1] == '>')
+            add_tail(tokens, new_elem(input_line + idx++, 2, DREDIR_OUT, state));
         else
-            add_tail(tokens, new_elem(str + idx, 1, REDIR_OUT, state));
+            add_tail(tokens, new_elem(input_line + idx, 1, REDIR_OUT, state));
         
         idx++;  // Increment the index to move to the next character
     }
@@ -1835,22 +1835,22 @@ static int	is_alphanum(int c)
  * If it's a regular alphanumeric variable, it continues processing until a non-alphanumeric character is found.
  *
 */
-int get_env_token(t_token *tokens, char *str, enum e_state state)
+int get_env_token(t_token *tokens, char *input_line_index, enum e_state state)
 {
     int i = 1;
 
     // Check if the next character is either '?' or a digit (0-9)
-    if (str[i] == '?' || (str[i] >= '0' && str[i] <= '9'))
+    if (input_line_index[i] == '?' || (input_line_index[i] >= '0' && input_line_index[i] <= '9'))
         i++;
     else
     {
         // If not, continue processing alphanumeric characters until a non-alphanumeric character is encountered
-        while (is_alphanum(str[i]) && str[i] != '\n' && str[i] != '\0')
+        while (is_alphanum(input_line_index[i]) && input_line_index[i] != '\n' && input_line_index[i] != '\0')
             i++;
     }
 
     // Add a new token to the linked list representing the environment variable
-    add_tail(tokens, new_elem(str, i, ENV, state));
+    add_tail(tokens, new_elem(input_line_index, i, ENV, state));
 
     return i;
 }
@@ -1862,7 +1862,7 @@ int get_env_token(t_token *tokens, char *str, enum e_state state)
  * The function adds a new token to the linked list (tokens) based on the determined state and token type.
  *
 */
-void quotes_state(t_token *tokens, char *str, enum e_state *state, int flag)
+void quotes_state(t_token *tokens, char *input_line_index, enum e_state *state, int flag)
 {
     enum e_state e_state;
     enum e_token e_type;
@@ -1883,19 +1883,19 @@ void quotes_state(t_token *tokens, char *str, enum e_state *state, int flag)
     if (*state == GENERAL)
     {
         // If in the GENERAL state, add a new token representing the quote to the list
-        add_tail(tokens, new_elem(str, 1, e_type, *state));
+        add_tail(tokens, new_elem(input_line_index, 1, e_type, *state));
         *state = e_state;  // Update the lexer state to the determined state
     }
     else if (*state == e_state)
     {
         // If already in the determined state, close the quote and return to the GENERAL state
         *state = GENERAL;
-        add_tail(tokens, new_elem(str, 1, e_type, *state));
+        add_tail(tokens, new_elem(input_line_index, 1, e_type, *state));
     }
     else
     {
         // If in a different state, add a new token representing the quote to the list
-        add_tail(tokens, new_elem(str, 1, e_type, *state));
+        add_tail(tokens, new_elem(input_line_index, 1, e_type, *state));
     }
 }
 
@@ -1919,16 +1919,16 @@ static int	in_charset(char c)
  * processes a word in the input string until a non-word character is encountered.
  * It adds a new token to the linked list (tokens) representing the word.
 */
-int get_word(t_token *tokens, char *str, enum e_state state)
+int get_word(t_token *tokens, char *input_line_index, enum e_state state)
 {
     int i = 0;
 
     // Count the length of the word until a non-word character is encountered
-    while (!in_charset(str[i]))
+    while (!in_charset(input_line_index[i]))
         i++;
 
     // Add a new token to the linked list representing the word
-    add_tail(tokens, new_elem(str, i, WORD, state));
+    add_tail(tokens, new_elem(input_line_index, i, WORD, state));
     return i;
 }
 
@@ -1938,37 +1938,37 @@ int get_word(t_token *tokens, char *str, enum e_state state)
  * handling different cases based on the type of character encountered
  * and updating the linked list of tokens accordingly.
 */
-int ft_make_token(t_token *tokens, char *str, int i, enum e_state *state)
+int ft_make_token(t_token *tokens, char *input_line, int index, enum e_state *state)
 {
     // Check if the current character is part of a word
-    if (in_charset(str[i]) != 1)
-        i += get_word(tokens, str + i, *state);
+	if (in_charset(input_line[index]) == 0)
+		index += get_word(tokens, input_line + index, *state);
     // Check if the current character is a single quote
-    else if (str[i] == '\'')
-        quotes_state(tokens, str + i++, state, 1);
+    else if (input_line[index] == '\'')
+        quotes_state(tokens, input_line + index++, state, 1);
     // Check if the current character is a double quote
-    else if (str[i] == '"')
-        quotes_state(tokens, str + i++, state, 2);
+    else if (input_line[index] == '"')
+        quotes_state(tokens, input_line + index++, state, 2);
     // Check if the current character is a dollar sign ('$')
-    else if (str[i] == '$')
+    else if (input_line[index] == '$')
     {
         // Check if the next character is a special case or a regular character
-        if (str[i + 1] && in_charset(str[i + 1]))
-            add_tail(tokens, new_elem(str + i++, 1, WORD, *state));
+        if (input_line[index + 1] && in_charset(input_line[index + 1]))
+            add_tail(tokens, new_elem(input_line + index++, 1, WORD, *state));
         else
-            i += get_env_token(tokens, str + i, *state);
+            index += get_env_token(tokens, input_line + index, *state);
     }
     // Check if the current character is a redirection symbol ('>' or '<')
-    else if (str[i] == '>' || str[i] == '<')
-        i += make_token_redir(tokens, str, i, *state);
+    else if (input_line[index] == '>' || input_line[index] == '<')
+        index += make_token_redir(tokens, input_line, index, *state);
     // Check if the current character is a pipe symbol ('|')
-    else if (str[i] == '|')
-        add_tail(tokens, new_elem(str + i++, 1, PIPE_LINE, *state));
+    else if (input_line[index] == '|')
+        add_tail(tokens, new_elem(input_line + index++, 1, PIPE_LINE, *state));
     // Check if the current character is a whitespace character
-    else if (ft_isspace(str[i]))
-        add_tail(tokens, new_elem(str + i++, 1, WHITE_SPACE, *state));
+    else if (ft_isspace(input_line[index]))
+        add_tail(tokens, new_elem(input_line + index++, 1, WHITE_SPACE, *state));
 
-    return i;
+    return index;
 }
 
 /*
@@ -1990,24 +1990,24 @@ t_token	*init_list(t_token *list)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /*
- * from entry point ft_line
+ * ft_line
  * simple lexer (lexical analyzer) using a linked list data structure to represent tokens. 
  */
-t_token *lexer(char *line)
+t_token *lexer(char *input_line)
 {
     t_token *tokens;    // Linked list to store tokens
-    int i;               // Index for iterating through the input line
+    int index;               // Index for iterating through the input line
     enum e_state state;  // Current state of the lexer (enum e_state)
 
-    i = 0;
+    index = 0;
     state = GENERAL;     // Initialize lexer state to GENERAL
     tokens = NULL;       // Initialize tokens to NULL
     tokens = init_list(tokens);  // Initialize the linked list
 
     if (tokens)
     {
-        while (line[i])  // Iterate through the characters of the input line
-            i = ft_make_token(tokens, line, i, &state);  // Process characters and create tokens
+        while (input_line[index])  // Iterate through the characters of the input line
+            index = ft_make_token(tokens, input_line, index, &state);  // Process characters and create tokens
     }
 
     return (tokens);  // Return the linked list of tokens
@@ -2150,7 +2150,7 @@ int	is_redir(enum e_token type)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
- * from entry point ft_line
+ * ft_line
  * iterates through the linked list of tokens (t_elem) using a temporary pointer tmp.
  * For each token, it checks for syntax errors related to pipes, redirections, and quotes.
  * If a syntax error is found, it returns an error message using the ft_perror function.
@@ -2694,7 +2694,7 @@ int ft_file_exist(char *str)
 }
 
 /*
- *
+ * main.ft_line
  * The function takes a pointer to the head of the linked list (head), which consists of t_cmd nodes.
  * It initializes a pointer (current) to traverse the linked list, starting from the head.
  * Inside the loop, for each node, it checks if the command's path is already an absolute path using the ft_file_exist function (which is assumed to return a boolean value).
