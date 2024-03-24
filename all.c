@@ -1908,6 +1908,12 @@ static int	ft_isspace(char c)
 	return (0);
 }
 
+/*
+ * These characters typically separate or delimit different parts of commands or expressions, so they are considered non-word characters
+ * If the character is part of the character set defined in in_charset, the function will return 1,
+ * if it's not part of that character set, it will return 0.
+ * c == 0 checks for the null character ('\0')
+*/
 static int	in_charset(char c)
 {
 	return (c == '\'' || c == '\"' || c == '<' || c == '>' || c == '|'
@@ -1916,14 +1922,14 @@ static int	in_charset(char c)
 
 /*
  * make_token
- * processes a word in the input string until a non-word character is encountered.
+ * processes a word in the input string until a non-word character is encountered (separator or delimiter).
  * It adds a new token to the linked list (tokens) representing the word.
 */
 int get_word(t_token *tokens, char *input_line_index, enum e_state state)
 {
     int i = 0;
 
-    // Count the length of the word until a non-word character is encountered
+    // Count the length of the word until a non-word character is encountered (separator or delimiter).
     while (!in_charset(input_line_index[i]))
         i++;
 
@@ -1941,7 +1947,7 @@ int get_word(t_token *tokens, char *input_line_index, enum e_state state)
 int ft_make_token(t_token *tokens, char *input_line, int index, enum e_state *state)
 {
     // Check if the current character is part of a word
-	if (in_charset(input_line[index]) == 0)
+	if (!in_charset(input_line[index]))	// in_charset(input_line[index]) == 0
 		index += get_word(tokens, input_line + index, *state);
     // Check if the current character is a single quote
     else if (input_line[index] == '\'')
