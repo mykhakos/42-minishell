@@ -1703,7 +1703,7 @@ void ft_executor(t_minishell *mini, char **envp)
  * new_elem
  * Function, which creates a duplicate (copy) of the input string s1 up to a specified maximum length n.
 */
-char *ft_strndup(char *s1, int n)
+char *ft_strndup(char *input_line_index, int len)
 {
     char *copy;
     size_t s1_len;
@@ -1712,7 +1712,7 @@ char *ft_strndup(char *s1, int n)
     i = 0;
 
     // Calculate the length of the input string s1
-    s1_len = ft_strlen(s1);
+    s1_len = ft_strlen(input_line_index);
 
     // Allocate memory for the copy with space for the null-terminator
     copy = malloc(sizeof(char) * (s1_len + 1));
@@ -1720,9 +1720,9 @@ char *ft_strndup(char *s1, int n)
         return (NULL);
 
     // Copy characters from s1 to the new copy, up to the specified maximum length n
-    while (s1[i] && i < n)
+    while (input_line_index[i] && i < len)
     {
-        copy[i] = s1[i];
+        copy[i] = input_line_index[i];
         i++;
     }
 
@@ -1758,9 +1758,9 @@ t_elem	*new_elem(char *input_line_index, int len, enum e_token type, enum e_stat
 /*
  * add_tail
 */
-static int	is_empty(t_token *list)
+static int	is_empty(t_token *tokens)
 {
-	return (list->head == NULL);
+	return (tokens->head == NULL);
 }
 
 /*
@@ -1768,17 +1768,17 @@ static int	is_empty(t_token *list)
  * mechanism to manage a doubly-linked list (t_list_n). 
  * It updates the tail of the list and adjusts pointers to add a new element to the end of the list. 
  */
-void	add_tail(t_token *list, t_elem *new)
+void	add_tail(t_token *tokens, t_elem *new_elem)
 {
-	if (is_empty(list))
-		list->head = new;
+	if (is_empty(tokens))
+		tokens->head = new_elem;
 	else
 	{
-		list->tail->next = new;
-		new->prev = list->tail;
+		tokens->tail->next = new_elem;
+		new_elem->prev = tokens->tail;
 	}
-	list->tail = new;
-	list->size++;
+	tokens->tail = new_elem;
+	tokens->size++;
 }
 
 /*
@@ -1950,11 +1950,11 @@ int ft_make_token(t_token *tokens, char *input_line, int index, enum e_state *st
 	if (!in_charset(input_line[index]))	// in_charset(input_line[index]) == 0
 		index += get_word(tokens, input_line + index, *state);
     // Check if the current character is a single quote
-    else if (input_line[index] == '\'')
-        quotes_state(tokens, input_line + index++, state, 1);
+    else if (input_line[index] == '\'')														{write(1, "qs\n", 3);
+        quotes_state(tokens, input_line + index++, state, 1);}
     // Check if the current character is a double quote
-    else if (input_line[index] == '"')
-        quotes_state(tokens, input_line + index++, state, 2);
+    else if (input_line[index] == '"')														{write(1, "dqs\n", 4);
+        quotes_state(tokens, input_line + index++, state, 2);}
     // Check if the current character is a dollar sign ('$')
     else if (input_line[index] == '$')
     {
