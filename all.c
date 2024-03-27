@@ -1980,12 +1980,12 @@ int ft_make_token(t_token *tokens, char *input_line, int index, enum e_state *st
 /*
  * lexer
 */
-t_token	*init_list(t_token *list)
+t_token	*init_list(t_token *tokens)
 {
-	list = ft_calloc(sizeof(t_token), 1);
-	if (!list)
+	tokens = ft_calloc(sizeof(t_token), 1);
+	if (!tokens)
 		return (NULL);
-	return (list);
+	return (tokens);
 }
 
 
@@ -2049,18 +2049,18 @@ t_elem	*skip_space(t_elem *ptr, int opt)
 }
 
 /*
- *
+ * sintax_check
  * This function checks for syntax errors related to pipes (|).
  * It looks at the previous and next tokens, skipping any leading/trailing spaces using the skip_space function.
  * If either the previous or next token is missing, it returns 1 (indicating an error)
 */
-int	pipe_err(t_elem *el)
+int	pipe_err(t_elem *element)
 {
 	t_elem	*prev;
 	t_elem	*next;
 
-	prev = skip_space(el->prev, 0);
-	next = skip_space(el->next, 1);
+	prev = skip_space(element->prev, 0);
+	next = skip_space(element->next, 1);
 	if (!prev || !next)
 		return (EXIT_FAILURE);
 	return (EXIT_SUCCESS);
@@ -2071,11 +2071,11 @@ int	pipe_err(t_elem *el)
  * This function checks for syntax errors in redirections (e.g., <, >, >>).
  * It looks at the next token after the redirection symbol and ensures it is of a valid type (WORD, ENV, DOUBLE_QUOTE, or QOUTE).
 */
-int	redir_err(t_elem *ptr)
+int	redir_err(t_elem *element)
 {
 	t_elem	*next;
 
-	next = skip_space(ptr->next, 1);
+	next = skip_space(element->next, 1);
 	if (!next || (next->type != WORD && next->type != ENV
 			&& next->type != DOUBLE_QUOTE && next->type != QOUTE))
 		return (EXIT_FAILURE);
@@ -2088,21 +2088,21 @@ int	redir_err(t_elem *ptr)
  * It iterates through the tokens until it finds a token of the specified type or reaches the end of the list.
  * If it doesn't find the closing quote, it prints an error message and returns the position where the unclosed quotes were detected.
  * Inside the loop:
- * If *ptr is NULL or the type of the token is equal to the specified type (which represents the type of the closing quote), the loop breaks.
- * After the loop, if *ptr is still NULL, it means the closing quote was not found, and an error message is written to the standard error
+ * If *element is NULL or the type of the token is equal to the specified type (which represents the type of the closing quote), the loop breaks.
+ * After the loop, if *element is still NULL, it means the closing quote was not found, and an error message is written to the standard error
 */
-t_elem	*quotes_err(t_elem **ptr, enum e_token type)
+t_elem	*quotes_err(t_elem **element, enum e_token type)
 {
-	while (*ptr)
+	while (*element)
 	{
-		*ptr = (*ptr)->next;
-		if (!*ptr || (*ptr)->type == type)
+		*element = (*element)->next;
+		if (!*element || (*element)->type == type)
 			break ;
 	}
-	if (!*ptr)
+	if (!*element)
 		write(2, "unclosed quotes detected.\n",
 			ft_strlen("unclosed quotes detected.\n"));
-	return (*ptr);
+	return (*element);
 }
 
 /*
@@ -2161,11 +2161,11 @@ int	is_redir(enum e_token type)
  * For each token, it checks for syntax errors related to pipes, redirections, and quotes.
  * If a syntax error is found, it returns an error message using the ft_perror function.
  */
-int sintax_check(t_token *list)
+int sintax_check(t_token *tokens)
 {
     t_elem *tmp;
 
-    tmp = list->head;
+    tmp = tokens->head;
     while (tmp)
     {
         // Check for pipe syntax errors
@@ -2325,19 +2325,22 @@ void parse_env(t_elem **elem, char **args, int *i, t_minishell *mini)
     (*elem) = (*elem)->next;
 }
 
+/********************************************************************************************/
 /*
  * parsing.new_cmd_node
 */
-void parse_word(t_elem **elem, char **args, int *i)
+void parse_word(t_elem **elem, char **args, int *index)
 {
     // Extract the content of the WORD token and store it in the args array
-    args[*i] = ft_substr((*elem)->content, 0, (*elem)->len + 1);
-    (*i)++;
+    args[*index] = ft_substr((*elem)->content, 0, (*elem)->len + 1);
+    (*index)++;
     
     // Move to the next token in the list
     (*elem) = (*elem)->next;
 }
 
+
+/********************************************************************************************/
 /*
  * parse_quot_ext
  *  It concatenates the value of the environment variable (val) to the current line variable.
@@ -2425,6 +2428,8 @@ char	*parse_quo(char *line, t_elem **node, enum e_token type, t_minishell *mini)
 		*node = (*node)->next;
 	return (line);
 }
+
+/********************************************************************************************/
 /*
  * parsing.new_cmd_node.parse_redir
  * etrieves the name (path or file descriptor) associated with a redirection.
@@ -2503,6 +2508,7 @@ void	parse_redir(t_elem **node, t_minishell *mini, t_cmd	*new)
 		new->in_filename = tmp;
 }
 
+/********************************************************************************************/
 /*
  * parsing.new_cmd_node
  * function initializes a new t_cmd structure. The parameters are the size of the command (number of arguments) and
@@ -2534,41 +2540,41 @@ t_cmd	*new_cmd_node_init(int size, int *i)
 
 /*
  * parsing
- * iterates through the input list, parsing tokens based on their types. 
+ * iterates through the input element, parsing tokens based on their types. 
  * It handles different token types, such as WORD, ENV, WHITE_SPACE, DOUBLE_QUOTE, QOUTE, and redirection tokens 
 */
-t_cmd *new_cmd_node(t_elem **list, int size, t_minishell *mini)
+t_cmd *new_cmd_node(t_elem **element, int size, t_minishell *mini)
 {
     t_cmd *new;
-    int i;
+    int index;
 
     // Initialize a new t_cmd structure
-    new = new_cmd_node_init(size, &i);
+    new = new_cmd_node_init(size, &index);
     if (new == NULL)
         return (NULL);
 
-    // Loop through the list until a PIPE_LINE token is encountered
-    while ((*list) && (*list)->type != PIPE_LINE)
+    // Loop through the element until a PIPE_LINE token is encountered
+    while ((*element) && (*element)->type != PIPE_LINE)
     {
         // Check the type of the current token and perform parsing accordingly
-        if ((*list)->type == WORD)
-            parse_word(list, new->cmd_args, &i);
-        else if ((*list)->type == ENV)
-            parse_env(list, new->cmd_args, &i, mini);
-        else if ((*list)->type == WHITE_SPACE)
-            (*list) = (*list)->next;
-        else if ((*list)->type == DOUBLE_QUOTE || (*list)->type == QOUTE)
+        if ((*element)->type == WORD)
+            parse_word(element, new->cmd_args, &index);
+        else if ((*element)->type == ENV)
+            parse_env(element, new->cmd_args, &index, mini);
+        else if ((*element)->type == WHITE_SPACE)
+            (*element) = (*element)->next;
+        else if ((*element)->type == DOUBLE_QUOTE || (*element)->type == QOUTE)
         {
-            new->cmd_args[i] = parse_quo(new->cmd_args[i], list, (*list)->type, mini);
-            if (new->cmd_args[i])
-                i++;
+            new->cmd_args[index] = parse_quo(new->cmd_args[index], element, (*element)->type, mini);
+            if (new->cmd_args[index])
+                index++;
         }
-        else if (is_redir((*list)->type))
-            parse_redir(list, mini, new);
+        else if (is_redir((*element)->type))
+            parse_redir(element, mini, new);
     }
 
     // Terminate the cmd array with NULL
-    new->cmd_args[i] = NULL;
+    new->cmd_args[index] = NULL;
     return (new);
 }
 
@@ -2655,26 +2661,26 @@ static void ft_add_cmd_end(t_cmd **head, t_cmd *new)
 
 /*
  * ft_line
- * function takes a linked list of elements (t_list_n) and a data structure (t_minishell *mini) as parameters.
+ * function takes a linked list of elements (tokens) and a data structure (t_minishell *mini) as parameters.
  * It iterates through the elements of the linked list, counts the number of arguments in each command, creates a new command node (t_cmd),
  * and adds it to the list of commands. Finally, it returns the list of parsed commands.
 */
-static	t_cmd *parsing(t_token *list, t_minishell *mini)
+static	t_cmd *parsing(t_token *tokens, t_minishell *mini)
 {
 	t_cmd	*commands;
 	t_cmd	*new;
-	t_elem		*tmp;
+	t_elem		*element;
 	int			size;
 
-	tmp = list->head;
+	element = tokens->head;
 	commands = NULL;
-	while (tmp)
+	while (element)
 	{
-		size = count_args(tmp);
-		new = new_cmd_node(&tmp, size, mini);
+		size = count_args(element);
+		new = new_cmd_node(&element, size, mini);
 		ft_add_cmd_end(&commands, new);
-		if (tmp)
-			tmp = tmp->next;
+		if (element)
+			element = element->next;
 	}
 	return (commands);
 }
@@ -2753,7 +2759,7 @@ int ft_line(t_minishell *mini)
     }
 
     // Check if the input line is empty or contains only whitespaces
-    if (ft_strlen(mini->input_line) == 0 || ft_has_characters(mini->input_line) == 0)
+    if (ft_strlen(mini->input_line) == 0 || !ft_has_characters(mini->input_line))  //ft_has_characters(mini->input_line) == 0
         return (1);
 
     // Add the input line to the history Place STRING at the end of the history list. The associated data field (if any) is set to NULL.
